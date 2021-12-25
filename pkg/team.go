@@ -7,16 +7,19 @@ type Worker struct {
 
 func (w Worker) GetValidMoves(board Board) (tiles []Tile) {
 	// List all possible tiles
-	type Position struct {X uint8, Y uint8}
-	candidates = []{
-		Position{w.X, w.Y+1},   // North
-		Position{w.X, w.Y-1},   // South
-		Position{w.X+1, w.Y},   // East
-		Position{w.X-1, w.Y},   // West
-		Position{w.X+1, w.Y+1}, // Northeast
-		Position{w.X-1, w.Y+1}, // Northwest
-		Position{w.X-1, w.Y+1}, // Southeast
-		Position{w.X-1, w.Y-1}, // Southwest
+	type Position struct {
+		X uint8
+		Y uint8
+	}
+	candidates := []Position{
+		{w.X, w.Y + 1},     // North
+		{w.X, w.Y - 1},     // South
+		{w.X + 1, w.Y},     // East
+		{w.X - 1, w.Y},     // West
+		{w.X + 1, w.Y + 1}, // Northeast
+		{w.X - 1, w.Y + 1}, // Northwest
+		{w.X - 1, w.Y + 1}, // Southeast
+		{w.X - 1, w.Y - 1}, // Southwest
 	}
 
 	// Filter invalid tiles
@@ -30,14 +33,14 @@ func (w Worker) GetValidMoves(board Board) (tiles []Tile) {
 		}
 
 		// Occupied Constraints
-		tile := board.GetTile(candiate.X, candidate.Y)
+		tile := board.GetTile(candidate.X, candidate.Y)
 		if tile.IsOccupied() {
 			continue
 		}
 
 		// Height Constraints
 		curTile := board.GetTile(w.X, w.Y)
-		if tile.Height > curTile.Height + 1 {
+		if tile.Height > curTile.Height+1 {
 			continue
 		}
 
