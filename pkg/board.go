@@ -135,8 +135,8 @@ func (board Board) GetMoveableTiles(x, y uint8) (tiles []Tile) {
 }
 
 // GetBuildableTiles returns all tiles that may be built from the provided position.
-func (board Board) GetBuildableTiles(worker Worker) (tiles []Tile) {
-	candidates := board.GetSurroundingTiles(worker.X, worker.Y)
+func (board Board) GetBuildableTiles(x, y uint8, worker Worker) (tiles []Tile) {
+	candidates := board.GetSurroundingTiles(x, y)
 
 	// Filter invalid tiles
 	for _, candidate := range candidates {

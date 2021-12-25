@@ -19,3 +19,24 @@ func TestNewBoard(t *testing.T) {
 		}
 	}
 }
+
+func TestIsOccupied(t *testing.T) {
+	workerOne := Worker{Team: 1, Number: 1}
+	workerTwo := Worker{Team: 1, Number: 2}
+	workerThree := Worker{Team: 2, Number: 1}
+	workerFour := Worker{Team: 2, Number: 2}
+
+	unoccupied := Tile{}
+	assert.False(t, unoccupied.IsOccupied())
+	assert.False(t, unoccupied.IsOccupiedBy(workerOne))
+	assert.False(t, unoccupied.IsOccupiedBy(workerTwo))
+	assert.False(t, unoccupied.IsOccupiedBy(workerThree))
+	assert.False(t, unoccupied.IsOccupiedBy(workerFour))
+
+	occupied := Tile{Worker: &workerOne}
+	assert.True(t, occupied.IsOccupied())
+	assert.True(t, occupied.IsOccupiedBy(workerOne))
+	assert.False(t, unoccupied.IsOccupiedBy(workerTwo))
+	assert.False(t, unoccupied.IsOccupiedBy(workerThree))
+	assert.False(t, unoccupied.IsOccupiedBy(workerFour))
+}
