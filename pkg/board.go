@@ -20,7 +20,8 @@ type Board struct {
 	Tiles [][]Tile
 	Teams []Team
 
-	Turn uint // Which teams turn it is
+	Turn   uint  // Which teams turn it is
+	Victor *Team // Who won the game
 }
 
 // NewBoard initializes a game with the default board size and two teams
@@ -50,13 +51,18 @@ func (b Board) GetTile(x, y uint8) (t Tile) {
 	return b.Tiles[x][y]
 }
 
-func (b Board) MoveWorker(w Worker, x, y uint8) {
+func (b *Board) MoveWorker(w Worker, x, y uint8) {
 	// TODO Check that the move is valid
 	// TODO Log the move
 	currentTile := b.GetTile(w.X, w.Y)
 	currentTile.Worker = nil
 	newTile := b.GetTile(x, y)
 	newTile.Worker = &w
+
+	// Check if the game has been won
+	if newTile.Height == 3 {
+		// TODO
+	}
 }
 
 func (b Board) Build(w Worker, x, y uint8) {
