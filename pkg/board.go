@@ -13,6 +13,13 @@ type Tile struct {
 func (t Tile) IsOccupied() bool {
 	return t.Worker != nil
 }
+func (t Tile) IsOccupiedBy(worker Worker) bool {
+	if t.Worker == nil {
+		return false
+	}
+
+	return t.Worker.Team == worker.Team && t.Worker.Number == worker.Number
+}
 
 func (t Tile) IsCapped() bool {
 	return t.Height > 3
@@ -128,13 +135,13 @@ func (board Board) GetMoveableTiles(x, y uint8) (tiles []Tile) {
 }
 
 // GetBuildableTiles returns all tiles that may be built from the provided position.
-func (board Board) GetBuildableTiles(x, y uint8) (tiles []Tile) {
-	candidates := board.GetSurroundingTiles(x, y)
+func (board Board) GetBuildableTiles(worker Worker) (tiles []Tile) {
+	candidates := board.GetSurroundingTiles(worker.X, worker.Y)
 
 	// Filter invalid tiles
 	for _, candidate := range candidates {
 		// Occupied Constraints
-		if candidate.IsOccupied() {
+		if candidate.IsOccupied() && !candidate.IsOccupiedBy(worker) {
 			continue
 		}
 
