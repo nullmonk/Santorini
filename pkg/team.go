@@ -25,7 +25,7 @@ func (worker Worker) GetValidTurns(board Board) (turns []Turn) {
 
 	// Add a potential turn for each possible build and move
 	for _, move := range moves {
-		builds := board.GetBuildableTiles(worker)
+		builds := board.GetBuildableTiles(move.x, move.y, worker)
 		for _, build := range builds {
 			turns = append(turns, Turn{
 				Worker: worker,
