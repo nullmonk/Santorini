@@ -2,43 +2,66 @@ package santorini
 
 import "fmt"
 
-const BOARD_SIZE = 5
-
 type Tile struct {
 	Height int // 0 no building, 4 capped
-	Worker interface{}
+	Worker *Worker
 }
 
 func (t Tile) IsOccupied() bool {
-	if t.Height > 3 {
-		return true
-	}
 	return t.Worker != nil
 }
 
-type Board struct {
-	tiles [][]Tile
+func (t Tile) IsCapped() bool {
+	return t.Height > 3
 }
 
+type Board struct {
+	Size  uint8
+	Tiles [][]Tile
+	Teams []Team
+
+	Turn uint // Which teams turn it is
+}
+
+// NewBoard initializes a game with the default board size and two teams
 func NewBoard() *Board {
+	return NewBoardCustom(BoardSize, 2)
+}
+
+// NewBoardCustom initializes a game with the given board size and number of teams
+func NewBoardCustom(size uint8, teams uint8) *Board {
 	b := new(Board)
-	b.tiles = make([][]Tile, BOARD_SIZE)
-	for i := range b.tiles {
-		b.tiles[i] = make([]Tile, BOARD_SIZE)
+	b.Size = size
+	b.Tiles = make([][]Tile, b.Size)
+
+	for i := range b.Tiles {
+		b.Tiles[i] = make([]Tile, b.Size)
 	}
 	return b
 }
 
-func (b Board) GetTile(x, y int) (t Tile) {
-	if x >= BOARD_SIZE || x < 0 {
+func (b Board) GetTile(x, y uint8) (t Tile) {
+	if x >= BoardSize {
 		panic(fmt.Errorf("invalid x"))
 	}
-	if y >= BOARD_SIZE || y < 0 {
+	if y >= BoardSize {
 		panic(fmt.Errorf("invalid x"))
 	}
-	return b.tiles[x][y]
+	return b.Tiles[x][y]
 }
 
-func (b *Board) SetTile(x, y int, tile Tile) (err error) {
-	return nil
+func (b Board) MoveWorker(w Worker, x, y uint8) {
+	// TODO Check that the move is valid
+	// TODO Log the move
+	currentTile := b.GetTile(w.X, w.Y)
+	currentTile.Worker = nil
+	newTile := b.GetTile(x, y)
+	newTile.Worker = &w
+}
+
+func (b Board) Build(w Worker, x, y uint8) {
+	// TODO log the build
+	// TODO validate the build
+	tile := b.GetTile(x, y)
+	tile.Height += 1
 }
