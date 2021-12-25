@@ -68,7 +68,7 @@ func (board Board) GetTile(x, y uint8) (t Tile) {
 		panic(fmt.Errorf("invalid x"))
 	}
 	if y >= BoardSize {
-		panic(fmt.Errorf("invalid x"))
+		panic(fmt.Errorf("invalid y"))
 	}
 	return board.Tiles[x][y]
 }
