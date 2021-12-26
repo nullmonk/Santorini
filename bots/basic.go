@@ -124,11 +124,13 @@ func (bb *BasicBot) rankMove(turn santorini.Turn) int {
 	}
 
 	// Dont build 2 up (unless capping, which is already handled)
-	if turn.Build.GetHeight() > worker.GetHeight() {
+	if turn.Build.GetHeight()+1 > turn.MoveTo.GetHeight()+1 {
 		rank -= 2
 	} else if turn.Build.GetHeight()+1 == 3 {
 		// If the build is increasing the height to 3, super rank it
 		rank += 2
+	} else if turn.Build.GetHeight() > turn.MoveTo.GetHeight() {
+		rank += 1
 	}
 
 	// use the recommended worker
