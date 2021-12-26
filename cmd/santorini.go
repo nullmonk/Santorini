@@ -38,11 +38,7 @@ func main() {
 	}
 
 	// Initialize Team 2
-	team2 := bots.KyleBot{
-		Team:      2,
-		EnemyTeam: 1,
-		Board:     board,
-	}
+	team2 := bots.NewBasicBot(2, board)
 
 	// REPL
 	reader := bufio.NewReader(os.Stdin)
@@ -79,7 +75,8 @@ func main() {
 			break
 		}
 
-		// Team 1 Play
+		//turn1Data, _ := json.Marshal(turn1)
+		//fmt.Printf("Turn JSON: %s\n", turn1Data)
 		fmt.Printf("Team 1 moves %sWorker %d%s to %d,%d and builds %d,%d\n",
 			color.GetWorkerColor(turn1.Team, turn1.Worker),
 			turn1.Worker,
@@ -101,8 +98,8 @@ func main() {
 			fmt.Printf("Team 1 Wins! Team 2 has no remaining moves\n")
 			break
 		}
-
-		// Team 2 Play
+		//turn2Data, _ := json.Marshal(turn2)
+		//fmt.Printf("Turn JSON: %s\n", turn2Data)
 		fmt.Printf("Team 2 moves %sWorker %d%s to %d,%d and builds %d,%d\n",
 			color.GetWorkerColor(turn2.Team, turn2.Worker),
 			turn2.Worker,

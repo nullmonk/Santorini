@@ -1,10 +1,9 @@
 package bots
 
 import (
-	"crypto/rand"
 	"log"
-	"math/big"
 	santorini "santorini/pkg"
+	"sort"
 )
 
 /* BasicBot is a bot that will perform the following actions:
@@ -15,13 +14,14 @@ import (
  */
 type BasicBot struct {
 	Board        *santorini.Board
-	Workers      []santorini.Tile
+	Workers      map[int]santorini.Tile
 	EnemyWorkers []santorini.Tile
 	Team         int
 
-	randomBot     RandomSelector
-	logger        log.Logger
-	turns         []santorini.Turn // Turns for the round, by worker
+	logger log.Logger
+	turns  []santorini.Turn // Turns for the round, by worker
+
+	chosenWorker  int // the worker we recommend moving
 	turnsByWorker map[int][]santorini.Turn
 }
 
@@ -29,7 +29,7 @@ func NewBasicBot(team int, board *santorini.Board) *BasicBot {
 	// Figure out where my workers are, and figure out where the enemy workers are
 	ai := &BasicBot{
 		Board:        board,
-		Workers:      make([]santorini.Tile, 0, 2),
+		Workers:      make(map[int]santorini.Tile, 2),
 		EnemyWorkers: make([]santorini.Tile, 0, 2),
 		Team:         team,
 
@@ -43,12 +43,12 @@ func NewBasicBot(team int, board *santorini.Board) *BasicBot {
 func (bb *BasicBot) update() {
 	bb.turns = bb.Board.GetValidTurns(bb.Team)
 
-	bb.Workers = make([]santorini.Tile, 0, 2)
+	bb.Workers = make(map[int]santorini.Tile, 2)
 	// Figure out where my workers are, and where the enemy workers are
 	for _, tile := range bb.Board.Tiles {
 		if tile.IsOccupied() {
-			if tile.GetWorker() == bb.Team {
-				bb.Workers = append(bb.Workers, tile)
+			if tile.GetTeam() == bb.Team {
+				bb.Workers[tile.GetWorker()] = tile
 			} else {
 				bb.EnemyWorkers = append(bb.EnemyWorkers, tile)
 			}
@@ -81,42 +81,69 @@ func (bb *BasicBot) SelectTurn() *santorini.Turn {
 	if t := bb.escapeTraps(); t != nil {
 		return t
 	}
-	// Get the status of the workers
-	stats := bb.getWorkerStatus()
-	diff := stats[0] - stats[1]
-	var workerToMove int
-	if diff > 5 {
-		// W1 is exceeding w2 by too much, balance by moving w2
-		workerToMove = 1
-	} else if diff < -5 {
-		// w2 is exceeding, improve w1
-		workerToMove = 2
-	} else if diff > 0 {
-		// w1 is doing good, work with it
-		workerToMove = 2
-	} else if diff < 0 {
-		workerToMove = 1
-	} else {
-		workerToMove = 1
-	}
 
-	// If we cant move the worker that we need to, use the other
-	if bb.turnsByWorker[workerToMove] == nil {
-		// chose a move for the worker
+	bb.chosenWorker = 5
+	/*
+		// If we cant move the worker that we need to, use the other
+		if len(bb.turnsByWorker[workerToMove]) > 0 {
+			bb.logger.Printf("Worker Stats: %v. Chose worker %v. (%v turns)", stats, workerToMove, len(bb.turnsByWorker[workerToMove]))
+			// chose a move for the worker
+			n, err := rand.Int(rand.Reader, big.NewInt(int64(len(bb.turnsByWorker[workerToMove])-1)))
+			if err != nil {
+				panic(err)
+			}
+			return &bb.turnsByWorker[workerToMove][n.Int64()]
+		}
+	*/
+
+	// chose a move for the worker
+	/*
 		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(bb.turns)-1)))
 		if err != nil {
 			panic(err)
 		}
 		return &bb.turns[n.Int64()]
+	*/
+	bb.sortMoves()
+	return &bb.turns[len(bb.turns)-1] // use the last move (Highest ranked)
+}
+
+func (bb *BasicBot) rankMove(turn santorini.Turn) int {
+	rank := 0
+
+	worker := bb.Workers[turn.Worker]
+	// if the worker is moving up/down, add/remove points (going up good)
+	rank += turn.MoveTo.GetHeight() - worker.GetHeight()
+
+	// if the move will limit us in the future, subtract a point
+	if len(bb.Board.GetMoveableTiles(turn.MoveTo)) < 2 {
+		rank -= 1
+	}
+	if len(bb.Board.GetBuildableTiles(bb.Team, -1, turn.MoveTo)) < 2 {
+		rank -= 1
 	}
 
-	bb.logger.Printf("Worker Stats: %v. Chose worker %v. (%v turns)", stats, workerToMove, len(bb.turnsByWorker[workerToMove]))
-	// chose a move for the worker
-	n, err := rand.Int(rand.Reader, big.NewInt(int64(len(bb.turnsByWorker[workerToMove])-1)))
-	if err != nil {
-		panic(err)
+	// Dont build 2 up (unless capping, which is already handled)
+	if turn.Build.GetHeight()+1 > turn.MoveTo.GetHeight()+1 {
+		rank -= 2
+	} else if turn.Build.GetHeight()+1 == 3 {
+		// If the build is increasing the height to 3, super rank it
+		rank += 2
+	} else if turn.Build.GetHeight() > turn.MoveTo.GetHeight() {
+		rank += 1
 	}
-	return &bb.turnsByWorker[workerToMove][n.Int64()]
+
+	// use the recommended worker
+	if turn.Worker == bb.chosenWorker {
+		rank += 1
+	}
+	return rank
+}
+
+func (bb *BasicBot) sortMoves() {
+	sort.Slice(bb.turns, func(i, j int) bool {
+		return bb.rankMove(bb.turns[i]) < bb.rankMove(bb.turns[j])
+	})
 }
 
 // Check if a winning move exists in any of the possible moves
@@ -149,7 +176,7 @@ func (bb *BasicBot) defend() *santorini.Turn {
 	}
 
 	if len(enemyWinningMoves) > len(defendMoves) {
-		bb.logger.Println("Enemy has more winning moves than I cannot block")
+		bb.logger.Println("Enemy has more winning moves than I can block")
 	}
 	// if we need to defend ourselves, do it
 	// TODO: order the defend moves based on how good the move is
@@ -166,14 +193,21 @@ func (bb *BasicBot) defend() *santorini.Turn {
 // We want to keep the workers close to the same stat (e.g. dont let one fall behind)
 // But still allow the other to excel
 func (bb *BasicBot) getWorkerStatus() (statuses []int) {
-	statuses = make([]int, len(bb.Workers))
-
-	// The bot with more moves is in a better position
-	if len(bb.turnsByWorker[0]) > len(bb.turnsByWorker[1]) {
-		statuses[0] += 1
-	} else if len(bb.turnsByWorker[0]) < len(bb.turnsByWorker[1]) {
-		statuses[1] += 1
+	wkrs := make([]santorini.Tile, 0, len(bb.Workers))
+	for _, worker := range bb.Workers {
+		wkrs = append(wkrs, worker)
 	}
+
+	sort.Slice(wkrs, func(i, j int) bool {
+		// Rank the bots
+		// The bot with more moves is in a better position
+		if len(bb.turnsByWorker[i]) > len(bb.turnsByWorker[j]) {
+
+		} else if len(bb.turnsByWorker[1]) < len(bb.turnsByWorker[2]) {
+			statuses[1] += 1
+		}
+		return false
+	})
 
 	for i, workerTile := range bb.Workers {
 		// height is good in general
