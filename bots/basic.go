@@ -215,7 +215,10 @@ func (bb *BasicBot) defend() *santorini.Turn {
 	// TODO: order the defend moves based on how good the move is
 	if len(defendMoves) > 0 {
 		bb.logger.Print("Capping enemy for defense")
-		return &defendMoves[0]
+		sort.Slice(defendMoves, func(i, j int) bool {
+			return bb.rankMove(defendMoves[i]) < bb.rankMove(defendMoves[j])
+		})
+		return &defendMoves[len(defendMoves)-1] // use the last move (Highest ranked)
 	}
 
 	// Other defense goes here?
