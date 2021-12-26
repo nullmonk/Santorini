@@ -12,7 +12,7 @@ type Turn struct {
 
 // IsVictory returns true if the turn would result in a victory
 func (t Turn) IsVictory() bool {
-	return t.MoveTo.height == 3
+	return t.MoveTo.height+1 > 3
 }
 
 // GetWorkerTile locates a particular worker's tile
