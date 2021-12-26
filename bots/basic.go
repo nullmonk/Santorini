@@ -85,31 +85,18 @@ func (bb *BasicBot) SelectTurn() *santorini.Turn {
 
 	// if a worker is almost trapped, get them out
 	if t := bb.escapeTraps(); t != nil {
-		return t
+		bb.chosenWorker = t.Worker
+		bb.rankMove(*t)
 	}
 
-	/*
-		// If we cant move the worker that we need to, use the other
-		if len(bb.turnsByWorker[workerToMove]) > 0 {
-			bb.logger.Printf("Worker Stats: %v. Chose worker %v. (%v turns)", stats, workerToMove, len(bb.turnsByWorker[workerToMove]))
-			// chose a move for the worker
-			n, err := rand.Int(rand.Reader, big.NewInt(int64(len(bb.turnsByWorker[workerToMove])-1)))
-			if err != nil {
-				panic(err)
-			}
-			return &bb.turnsByWorker[workerToMove][n.Int64()]
-		}
-	*/
-
-	// chose a move for the worker
-	/*
-		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(bb.turns)-1)))
-		if err != nil {
-			panic(err)
-		}
-		return &bb.turns[n.Int64()]
-	*/
 	bb.sortMoves()
+	/* Debug, print top ten moves and weights
+	for x, i := range bb.turns {
+		if x > len(bb.turns)-10 {
+			fmt.Printf("%d %+v\n", bb.rankMove(i), i)
+		}
+	}
+	*/
 	return &bb.turns[len(bb.turns)-1] // use the last move (Highest ranked)
 }
 
@@ -118,7 +105,20 @@ func (bb *BasicBot) rankMove(turn santorini.Turn) int {
 
 	worker := bb.Workers[turn.Worker]
 	// if the worker is moving up/down, add/remove points (going up good)
-	rank += (turn.MoveTo.GetHeight() - worker.GetHeight()) * 10
+	if diff := turn.MoveTo.GetHeight() - worker.GetHeight(); diff > 0 {
+		rank += 50 // move up
+	} else if diff == -2 {
+		rank -= 100
+	} else if diff == -1 {
+		rank -= 20
+	}
+
+	// dislike corners and edges
+	rank -= (8 - len(bb.Board.GetSurroundingTiles(turn.Build.GetX(), turn.Build.GetY()))) * 5
+	// dont like moving to corner
+	if len(bb.Board.GetSurroundingTiles(turn.MoveTo.GetX(), turn.MoveTo.GetY())) == 3 {
+		rank -= 20
+	}
 
 	// if the move will limit us in the future, subtract a point
 	if len(bb.Board.GetMoveableTiles(turn.MoveTo)) < 2 {
@@ -129,7 +129,7 @@ func (bb *BasicBot) rankMove(turn santorini.Turn) int {
 	}
 
 	// Dont build 2 up (unless capping, which is already handled)
-	if turn.Build.GetHeight() > turn.MoveTo.GetHeight()+1 {
+	if turn.Build.GetHeight() > turn.MoveTo.GetHeight() {
 		rank -= 30
 	} else if turn.Build.GetHeight()+1 == 3 {
 		// If the build is increasing the height to 3, super rank it
@@ -137,30 +137,38 @@ func (bb *BasicBot) rankMove(turn santorini.Turn) int {
 	} else if turn.Build.GetHeight()+1 > turn.MoveTo.GetHeight() {
 		// Building up next to ourselves is good (as oposed to starting on the ground)
 		rank += 20
+	} else if turn.Build.GetHeight() > 0 {
+		rank += 30
 	}
 
 	surroundingBuild := bb.Board.GetSurroundingTiles(turn.Build.GetX(), turn.Build.GetY())
 
-	// Try not to give the enemy spots to rise up to
 	for _, tile := range surroundingBuild {
-		if tile.GetTeam() != bb.Team {
-			//rank -= 10 /// badbadbad
+		if tile.IsOccupied() && tile.GetTeam() != bb.Team {
+			if turn.Build.GetHeight() == 2 {
+				rank -= 111111111
+			}
+			rank -= 10
 		}
-	}
-	// Build on blocks that are touching other blocks laterally
-	for _, tile := range surroundingBuild {
-		// Build next to tiles that are already built
 		if tile.GetHeight() > 0 {
 			rank += 3
 		}
-		if tile.GetHeight() == 2 && turn.MoveTo.GetHeight() == 2 {
-			rank += 20
+	}
+
+	// Build on blocks that are touching other blocks laterally
+	for _, tile := range bb.Board.GetSurroundingTiles(turn.MoveTo.GetX(), turn.MoveTo.GetY()) {
+		// Try not to move next to my buddy
+		if tile.GetTeam() == bb.Team {
+			rank -= 30
 		}
+	}
+	if turn.Build.GetHeight() == 2 && turn.MoveTo.GetHeight() == 2 {
+		rank += 10
 	}
 
 	// use the recommended worker
 	if turn.Worker == bb.chosenWorker {
-		rank += 10
+		rank += 100000
 	}
 	return rank
 }
