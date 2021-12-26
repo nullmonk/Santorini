@@ -15,52 +15,49 @@ import (
  */
 type BasicBot struct {
 	Board        *santorini.Board
-	Workers      []*santorini.Worker
-	EnemyWorkers []*santorini.Worker
+	Workers      []santorini.Tile
+	EnemyWorkers []santorini.Tile
+	Team         int
 
 	randomBot RandomSelector
 	logger    log.Logger
-	turns     [][]santorini.Turn // Turns for the round
+	turns     []santorini.Turn // Turns for the round, by worker
 }
 
-func NewSantoriniAI(team int, board *santorini.Board) *BasicBot {
+func NewBasicBot(team int, board *santorini.Board) *BasicBot {
 	// Figure out where my workers are, and figure out where the enemy workers are
 	ai := &BasicBot{
 		Board:        board,
-		Workers:      make([]*santorini.Worker, 0, 2),
-		EnemyWorkers: make([]*santorini.Worker, 0, 2),
+		Workers:      make([]santorini.Tile, 0, 2),
+		EnemyWorkers: make([]santorini.Tile, 0, 2),
+		Team:         team,
 
 		randomBot: RandomSelector{
-			Board:   board,
-			Workers: make([]santorini.Worker, 0, 2),
+			Board: board,
+			Team:  team,
 		},
-		turns: make([][]santorini.Turn, 0, 2),
 	}
-
-	for _, row := range board.Tiles {
-		for _, tile := range row {
-			if tile.Worker != nil {
-				if tile.Worker.Team == team {
-					ai.Workers = append(ai.Workers, tile.Worker)
-					ai.randomBot.Workers = append(ai.randomBot.Workers, *tile.Worker)
-				} else {
-					ai.EnemyWorkers = append(ai.EnemyWorkers, tile.Worker)
-				}
-			}
-		}
-	}
-
 	return ai
 }
 
-func (bb *BasicBot) SelectTurn() santorini.Turn {
-	for i, worker := range bb.Workers {
-		bb.turns[i] = worker.GetValidTurns(*bb.Board)
-		// if we can win, do it
-		if winningMoves := GetWinningMoves(bb.turns[i]); len(winningMoves) > 0 {
-			bb.logger.Print("Detected a winning move. Executing it")
-			return winningMoves[0]
+func (bb *BasicBot) updateWorkers() {
+	for _, tile := range bb.Board.Tiles {
+		if tile.IsOccupied() {
+			if tile.GetWorker() == bb.Team {
+				bb.Workers = append(bb.Workers, tile)
+			} else {
+				bb.EnemyWorkers = append(bb.EnemyWorkers, tile)
+			}
 		}
+	}
+}
+
+func (bb *BasicBot) SelectTurn() santorini.Turn {
+	bb.updateWorkers()
+	bb.turns = bb.Board.GetValidTurns(bb.Team)
+	if winningMoves := GetWinningMoves(bb.turns); len(winningMoves) > 0 {
+		bb.logger.Print("Detected a winning move. Executing it")
+		return winningMoves[0]
 	}
 
 	// If we need to defend, do it
@@ -117,13 +114,9 @@ func GetWinningMoves(turns []santorini.Turn) []santorini.Turn {
 // defend tries to stop the enemy
 func (bb *BasicBot) defend() (turn santorini.Turn, ok bool) {
 	// See if the enemy can win, if they can, then try to block them
-	enemyWinningMoves := make([]santorini.Turn, 0, 10)
 	defendMoves := make([]santorini.Turn, 0, 10) // Moves that we can make to defend ourselves
 
-	for _, enemy := range bb.EnemyWorkers {
-		enemyturns := enemy.GetValidTurns(*bb.Board)
-		enemyWinningMoves = append(enemyWinningMoves, GetWinningMoves(enemyturns)...)
-	}
+	enemyWinningMoves := GetWinningMoves(bb.Board.GetValidTurns(bb.EnemyWorkers[0].GetTeam()))
 
 	// Try to block the enemy winning moves
 	for _, et := range enemyWinningMoves {
@@ -164,21 +157,20 @@ func (bb *BasicBot) getWorkerStatus() (statuses []int) {
 		statuses[1] += 1
 	}
 
-	for i, w := range bb.Workers {
-		workerTile := bb.Board.GetTile(w.X, w.Y)
+	for i, workerTile := range bb.Workers {
 		// height is good in general
-		statuses[i] += workerTile.Height
+		statuses[i] += workerTile.GetHeight()
 
 		// edges are a negative for defensibility, we want to be able float around and defend
-		if w.X == 0 || w.X == bb.Board.Size-1 || w.Y == 0 || w.Y == bb.Board.Size {
+		if workerTile.GetX() == 0 || workerTile.GetX() == bb.Board.Size-1 || workerTile.GetY() == 0 || workerTile.GetY() == bb.Board.Size {
 			// We are on an edge
 		} else {
 			statuses[i] += 1
 		}
 
 		// surrounding blocks of the >= height are good, get a bonus for that
-		for _, tile := range bb.Board.GetSurroundingTiles(w.X, w.Y) {
-			if tile.Height >= workerTile.Height {
+		for _, tile := range bb.Board.GetSurroundingTiles(workerTile.GetX(), workerTile.GetY()) {
+			if tile.GetHeight() >= workerTile.GetHeight() {
 				statuses[i] += 1
 			}
 		}
