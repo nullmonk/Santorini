@@ -14,10 +14,6 @@ type TurnSelector interface {
 	SelectTurn() santorini.Turn
 }
 
-func playTurn(board *santorini.Board, selector TurnSelector) {
-
-}
-
 func main() {
 	// Initialize a new board
 	board := santorini.NewBoard()
@@ -37,13 +33,13 @@ func main() {
 	// Initialize RNG Team 1
 	team1 := RandomSelector{
 		Board:   board,
-		Workers: []santorini.Worker{*workerA1, *workerA2},
+		Workers: []*santorini.Worker{workerA1, workerA2},
 	}
 
 	// Initialize Team 2
 	team2 := RandomSelector{
 		Board:   board,
-		Workers: []santorini.Worker{*workerB1, *workerB2},
+		Workers: []*santorini.Worker{workerB1, workerB2},
 	}
 
 	// REPL
@@ -79,7 +75,7 @@ func main() {
 		// Team 1 Move
 		turn1 := team1.SelectTurn()
 		if turn1 == nil {
-			fmt.Printf("Team 2 Wins! Team 1 has no remaining moves")
+			fmt.Printf("Team 2 Wins! Team 1 has no remaining moves\n")
 			break
 		}
 
@@ -98,7 +94,7 @@ func main() {
 		// Team 2 Move
 		turn2 := team2.SelectTurn()
 		if turn2 == nil {
-			fmt.Printf("Team 1 Wins! Team 2 has no remaining moves")
+			fmt.Printf("Team 1 Wins! Team 2 has no remaining moves\n")
 			break
 		}
 		board.PlayTurn(*turn2)

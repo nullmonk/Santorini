@@ -9,7 +9,7 @@ import (
 // RandomSelector will play the game randomly
 type RandomSelector struct {
 	Board   *santorini.Board
-	Workers []santorini.Worker
+	Workers []*santorini.Worker
 }
 
 // SelectTurn at random, returns nil if no move can be made

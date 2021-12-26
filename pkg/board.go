@@ -2,40 +2,9 @@ package santorini
 
 import "fmt"
 
-type Tile struct {
-	Height int     // 0 no building, 4 capped
-	Worker *Worker `json:",omitempty"`
-
-	x uint8
-	y uint8
-}
-
-func (t Tile) IsOccupied() bool {
-	return t.Worker != nil
-}
-func (t Tile) IsOccupiedBy(worker Worker) bool {
-	if t.Worker == nil {
-		return false
-	}
-
-	return t.Worker.Team == worker.Team && t.Worker.Number == worker.Number
-}
-
-func (t Tile) IsCapped() bool {
-	return t.Height > 3
-}
-
-func (t Tile) GetX() uint8 {
-	return t.x
-}
-
-func (t Tile) GetY() uint8 {
-	return t.y
-}
-
 type Board struct {
 	Size  uint8
-	Tiles [][]*Tile
+	Tiles [][]Tile
 
 	IsOver bool
 	Victor int // Who won the game
@@ -62,12 +31,12 @@ func NewBoard(options ...func(*Board)) *Board {
 	}
 
 	// Build Tiles
-	board.Tiles = make([][]*Tile, board.Size)
+	board.Tiles = make([][]Tile, board.Size)
 	for x := 0; x < int(board.Size); x++ {
-		board.Tiles[x] = make([]*Tile, board.Size)
+		board.Tiles[x] = make([]Tile, board.Size)
 
 		for y := 0; y < int(board.Size); y++ {
-			board.Tiles[x][y] = &Tile{
+			board.Tiles[x][y] = Tile{
 				x: uint8(x),
 				y: uint8(y),
 			}
@@ -77,7 +46,7 @@ func NewBoard(options ...func(*Board)) *Board {
 	return board
 }
 
-func (board Board) GetTile(x, y uint8) (t *Tile) {
+func (board Board) GetTile(x, y uint8) (t Tile) {
 	if x >= BoardSize {
 		panic(fmt.Errorf("invalid x"))
 	}
@@ -85,6 +54,16 @@ func (board Board) GetTile(x, y uint8) (t *Tile) {
 		panic(fmt.Errorf("invalid y"))
 	}
 	return board.Tiles[x][y]
+}
+
+func (board *Board) setTile(tile Tile) {
+	if tile.x >= BoardSize {
+		panic(fmt.Errorf("invalid x"))
+	}
+	if tile.y >= BoardSize {
+		panic(fmt.Errorf("invalid y"))
+	}
+	board.Tiles[tile.x][tile.y] = tile
 }
 
 func (board Board) GetSurroundingTiles(x, y uint8) (tiles []Tile) {
@@ -114,7 +93,7 @@ func (board Board) GetSurroundingTiles(x, y uint8) (tiles []Tile) {
 		}
 
 		// Otherwise, it is a valid tile
-		tiles = append(tiles, *board.GetTile(candidate.X, candidate.Y))
+		tiles = append(tiles, board.GetTile(candidate.X, candidate.Y))
 	}
 
 	return
@@ -174,33 +153,27 @@ func (board Board) GetBuildableTiles(x, y uint8, worker Worker) (tiles []Tile) {
 func (board *Board) PlayTurn(turn Turn) (gameover bool) {
 	board.Moves = append(board.Moves, turn)
 
-	// Step 1. Move
-	srcTile := board.Tiles[turn.Worker.X][turn.Worker.Y]
-	worker := srcTile.Worker
+	// 1. Move Worker
+	srcX := turn.Worker.X
+	srcY := turn.Worker.Y
+	src := board.GetTile(srcX, srcY)
+	board.setTile(Tile{Height: src.Height, Worker: nil, x: srcX, y: srcY})
 
-	dstTile := board.Tiles[turn.MoveTo.x][turn.MoveTo.y]
-
-	// TODO Validate the move here
-
-	// Update the worker location
-	worker.X = turn.MoveTo.x
-	worker.Y = turn.MoveTo.y
-
-	srcTile.Worker = nil
-	dstTile.Worker = worker
+	dstX := turn.MoveTo.x
+	dstY := turn.MoveTo.y
+	dst := board.GetTile(dstX, dstY)
+	board.setTile(Tile{Height: dst.Height, Worker: turn.Worker, x: dstX, y: dstY})
 
 	// Check if the game has been won
-	if dstTile.Height == 3 {
-		board.Victor = worker.Team
+	if dst.Height == 3 {
+		board.Victor = turn.Worker.Team
 		board.IsOver = true
 		return true
 	}
 
-	// Step 2. Build
-	dstTile = board.Tiles[turn.Build.x][turn.Build.y]
-
-	// Validate the build here
-	dstTile.Height += 1
+	// 2. Build
+	build := board.GetTile(turn.Build.x, turn.Build.y)
+	board.setTile(Tile{Height: build.Height + 1, Worker: build.Worker, x: build.x, y: build.y})
 	return false
 }
 
