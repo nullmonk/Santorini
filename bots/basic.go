@@ -25,6 +25,10 @@ type BasicBot struct {
 	turnsByWorker map[int][]santorini.Turn
 }
 
+func (bb *BasicBot) Name() string {
+	return "BasicBot"
+}
+
 func NewBasicBot(team int, board *santorini.Board) *BasicBot {
 	// Figure out where my workers are, and figure out where the enemy workers are
 	ai := &BasicBot{
@@ -82,7 +86,6 @@ func (bb *BasicBot) SelectTurn() *santorini.Turn {
 		return t
 	}
 
-	bb.chosenWorker = 5
 	/*
 		// If we cant move the worker that we need to, use the other
 		if len(bb.turnsByWorker[workerToMove]) > 0 {
@@ -125,37 +128,37 @@ func (bb *BasicBot) rankMove(turn santorini.Turn) int {
 
 	// Dont build 2 up (unless capping, which is already handled)
 	if turn.Build.GetHeight() > turn.MoveTo.GetHeight()+1 {
-		rank -= 20
+		rank -= 30
 	} else if turn.Build.GetHeight()+1 == 3 {
-		/*
-			// Make sure there isnt an enemy worker nearby
-			for _, tile := range bb.Board.GetSurroundingTiles(turn.Build.GetX(), turn.Build.GetY()) {
-				if tile.GetTeam() != bb.Team {
-					rank -= 11111111111 /// badbadbad
-				}
-			}
-		*/
-		// If the build is increasing the height to 3, super rank it
-		rank += 20
-	} else if turn.Build.GetHeight()+1 > turn.MoveTo.GetHeight() {
-		// Building up next to ourselves is good (as oposed to starting on the ground)
-		rank += 10
-	}
-
-	/*
-		// Try not to give the enemy spots to rise up to
+		// Make sure there isnt an enemy worker nearby (TODO: THIS IS BROKEN)
 		for _, tile := range bb.Board.GetSurroundingTiles(turn.Build.GetX(), turn.Build.GetY()) {
 			if tile.GetTeam() != bb.Team {
-				rank -= 10 /// badbadbad
+				//rank -= 11111111111 /// badbadbad
 			}
 		}
-	*/
+		// If the build is increasing the height to 3, super rank it
+		rank += 30
+	} else if turn.Build.GetHeight()+1 > turn.MoveTo.GetHeight() {
+		// Building up next to ourselves is good (as oposed to starting on the ground)
+		rank += 20
+	}
 
+	surroundingBuild := bb.Board.GetSurroundingTiles(turn.Build.GetX(), turn.Build.GetY())
+
+	// Try not to give the enemy spots to rise up to
+	for _, tile := range surroundingBuild {
+		if tile.GetTeam() != bb.Team {
+			//rank -= 10 /// badbadbad
+		}
+	}
 	// Build on blocks that are touching other blocks laterally
-	for _, tile := range bb.Board.GetSurroundingTiles(turn.Build.GetX(), turn.Build.GetY()) {
+	for _, tile := range surroundingBuild {
 		// Build next to tiles that are already built
 		if tile.GetHeight() > 0 {
 			rank += 3
+		}
+		if tile.GetHeight() == 2 && turn.MoveTo.GetHeight() == 2 {
+			rank += 20
 		}
 	}
 
