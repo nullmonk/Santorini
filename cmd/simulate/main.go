@@ -85,13 +85,18 @@ func main() {
 		board.PlaceWorker(2, 1, workerTileB1)
 		board.PlaceWorker(2, 2, workerTileB2)
 
-		// Initialize RNG Team 1
-		team1 := bots.NewBasicBot(1, board)
-
-		// Initialize Team 2
-		team2 := bots.KyleBot{
-			Team:      2,
-			EnemyTeam: 1,
+		/*
+			team1 := bots.NewBasicBot(1, board)
+			team2 := bots.KyleBot{
+				Team:      2,
+				EnemyTeam: 1,
+				Board:     board,
+			}
+		*/
+		team2 := bots.NewBasicBot(2, board)
+		team1 := bots.KyleBot{
+			Team:      1,
+			EnemyTeam: 2,
 			Board:     board,
 		}
 
