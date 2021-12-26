@@ -2,7 +2,6 @@ package santorini
 
 import (
 	"fmt"
-	"log"
 )
 
 type Board struct {
@@ -198,7 +197,6 @@ func (board *Board) PlayTurn(turn Turn) (gameover bool) {
 
 	// 4. Build
 	buildTile := board.GetTile(turn.Build.x, turn.Build.y)
-	log.Printf("Attempting to build tile: %+v\n", buildTile)
 	if buildTile.height > 3 {
 		panic(fmt.Errorf("cannot build tile %+v", turn))
 	}

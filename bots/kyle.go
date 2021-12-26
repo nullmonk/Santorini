@@ -17,6 +17,9 @@ func (bot KyleBot) SelectTurn() *santorini.Turn {
 	enemyWorker2 := bot.Board.GetWorkerTile(bot.EnemyTeam, 2)
 
 	candidates := bot.Board.GetValidTurns(bot.Team)
+	if candidates == nil {
+		return nil
+	}
 
 	var (
 		maxWeight int = -1000
