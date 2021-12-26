@@ -12,6 +12,8 @@ type Board struct {
 	IsOver bool
 	Victor int // Who won the game
 	Moves  []Turn
+
+	lastTeam int
 }
 
 // NewBoard initializes a game with the default board size and two teams
@@ -161,6 +163,11 @@ func (board Board) GetBuildableTiles(team, worker int, buildTile Tile) (tiles []
 
 // PlayTurn will update the board state with the results of the provided turn, or panic if the turn is illegal
 func (board *Board) PlayTurn(turn Turn) (gameover bool) {
+	if turn.Team == board.lastTeam {
+		panic(fmt.Errorf("it is not team %d's turn", turn.Team))
+	}
+	board.lastTeam = turn.Team
+
 	if turn.Team == 0 {
 		panic(fmt.Errorf("must set team taking the turn: %+v", turn))
 	}
