@@ -2,6 +2,7 @@ package bots
 
 import (
 	"log"
+	"math"
 	santorini "santorini/pkg"
 	"sort"
 )
@@ -48,6 +49,7 @@ func (bb *BasicBot) update() {
 	bb.turns = bb.Board.GetValidTurns(bb.Team)
 
 	bb.Workers = make(map[int]santorini.Tile, 2)
+	bb.EnemyWorkers = make([]santorini.Tile, 0, 2)
 	// Figure out where my workers are, and where the enemy workers are
 	for _, tile := range bb.Board.Tiles {
 		if tile.IsOccupied() {
@@ -130,12 +132,6 @@ func (bb *BasicBot) rankMove(turn santorini.Turn) int {
 	if turn.Build.GetHeight() > turn.MoveTo.GetHeight()+1 {
 		rank -= 30
 	} else if turn.Build.GetHeight()+1 == 3 {
-		// Make sure there isnt an enemy worker nearby (TODO: THIS IS BROKEN)
-		for _, tile := range bb.Board.GetSurroundingTiles(turn.Build.GetX(), turn.Build.GetY()) {
-			if tile.GetTeam() != bb.Team {
-				//rank -= 11111111111 /// badbadbad
-			}
-		}
 		// If the build is increasing the height to 3, super rank it
 		rank += 30
 	} else if turn.Build.GetHeight()+1 > turn.MoveTo.GetHeight() {
@@ -218,47 +214,6 @@ func (bb *BasicBot) defend() *santorini.Turn {
 	return nil
 }
 
-// Worker Status is a metric of how good of a position a worker is in,
-// We want to keep the workers close to the same stat (e.g. dont let one fall behind)
-// But still allow the other to excel
-func (bb *BasicBot) getWorkerStatus() (statuses []int) {
-	wkrs := make([]santorini.Tile, 0, len(bb.Workers))
-	for _, worker := range bb.Workers {
-		wkrs = append(wkrs, worker)
-	}
-
-	sort.Slice(wkrs, func(i, j int) bool {
-		// Rank the bots
-		// The bot with more moves is in a better position
-		if len(bb.turnsByWorker[i]) > len(bb.turnsByWorker[j]) {
-
-		} else if len(bb.turnsByWorker[1]) < len(bb.turnsByWorker[2]) {
-			statuses[1] += 1
-		}
-		return false
-	})
-
-	for i, workerTile := range bb.Workers {
-		// height is good in general
-		statuses[i] += workerTile.GetHeight()
-
-		// edges are a negative for defensibility, we want to be able float around and defend
-		if workerTile.GetX() == 0 || workerTile.GetX() == bb.Board.Size-1 || workerTile.GetY() == 0 || workerTile.GetY() == bb.Board.Size {
-			// We are on an edge
-		} else {
-			statuses[i] += 1
-		}
-
-		// surrounding blocks of the >= height are good, get a bonus for that
-		for _, tile := range bb.Board.GetSurroundingTiles(workerTile.GetX(), workerTile.GetY()) {
-			if tile.GetHeight() > 0 && tile.GetHeight() >= workerTile.GetHeight() {
-				statuses[i] += 1
-			}
-		}
-	}
-	return statuses
-}
-
 // If a worker is close to being trapped, have it escape
 func (bb *BasicBot) escapeTraps() *santorini.Turn {
 	for _, tile := range bb.Workers {
@@ -272,8 +227,8 @@ func (bb *BasicBot) escapeTraps() *santorini.Turn {
 	return nil
 }
 
-// Perform a build for the worker
-func (bb *BasicBot) build(worker int) *santorini.Turn {
-	// First of all see if we have any turns for this worker
-	return nil
+func getDistance(t1, t2 santorini.Tile) int {
+	dx := math.Abs(float64(t1.GetX() - t2.GetX()))
+	dy := math.Abs(float64(t1.GetY() - t2.GetY()))
+	return int(math.Max(dx, dy) - math.Min(dx, dy))
 }

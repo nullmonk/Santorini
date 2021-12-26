@@ -7,10 +7,11 @@ import (
 	santorini "santorini/pkg"
 )
 
-const MaxSimulations = 100
+const MaxSimulations = 3
 
 type TurnSelector interface {
 	SelectTurn() *santorini.Turn
+	Name() string
 }
 
 type Simulation struct {
@@ -29,26 +30,26 @@ func (sim *Simulation) doRound() bool {
 	// Team 1 Select
 	turn1 := sim.Team1.SelectTurn()
 	if turn1 == nil {
-		fmt.Printf("Team 2 Wins! Team 1 has no remaining moves\n")
+		fmt.Printf("Team 2 (%s) Wins! Team 1 has no remaining moves\n", sim.Team2.Name())
 		return true
 	}
 
 	// Team 1 Play
 	if sim.Board.PlayTurn(*turn1) {
-		fmt.Printf("Team 1 Wins!\n")
+		fmt.Printf("Team 1 (%s) Wins!\n", sim.Team1.Name())
 		return true
 	}
 
 	// Team 2 Select
 	turn2 := sim.Team2.SelectTurn()
 	if turn2 == nil {
-		fmt.Printf("Team 1 Wins! Team 2 has no remaining moves\n")
+		fmt.Printf("Team 1 (%s) Wins! Team 2 has no remaining moves\n", sim.Team1.Name())
 		return true
 	}
 
 	// Team 2 Play
 	if sim.Board.PlayTurn(*turn2) {
-		fmt.Printf("Team 2 Wins!\n")
+		fmt.Printf("Team 2 (%s) Wins!\n", sim.Team2.Name())
 		return true
 	}
 
@@ -59,10 +60,27 @@ func (sim *Simulation) doRound() bool {
 // Run a game until it's completion
 func (sim *Simulation) Run() {
 	for !sim.doRound() {
-		log.Printf("Completed Round %d", sim.round)
+		//log.Printf("Completed Round %d", sim.round)
 	}
 
 	log.Printf("Simulation %d Completed, Team %d won after %d rounds", sim.Number, sim.Board.Victor, sim.round)
+}
+
+func defaultPosition() *santorini.Board {
+	board := santorini.NewBoard()
+
+	// Select Worker Tiles
+	workerTileA1 := board.GetTile(2, 1)
+	workerTileA2 := board.GetTile(2, 3)
+	workerTileB1 := board.GetTile(1, 2)
+	workerTileB2 := board.GetTile(3, 2)
+
+	// Place Workers
+	board.PlaceWorker(1, 1, workerTileA1)
+	board.PlaceWorker(1, 2, workerTileA2)
+	board.PlaceWorker(2, 1, workerTileB1)
+	board.PlaceWorker(2, 2, workerTileB2)
+	return board
 }
 
 func main() {
@@ -70,42 +88,27 @@ func main() {
 	team2Wins := 0
 
 	for i := 0; i < MaxSimulations; i++ {
-		// Initialize a new board
-		board := santorini.NewBoard()
 
-		// Select Worker Tiles
-		workerTileA1 := board.GetTile(2, 1)
-		workerTileA2 := board.GetTile(2, 3)
-		workerTileB1 := board.GetTile(1, 2)
-		workerTileB2 := board.GetTile(3, 2)
-
-		// Place Workers
-		board.PlaceWorker(1, 1, workerTileA1)
-		board.PlaceWorker(1, 2, workerTileA2)
-		board.PlaceWorker(2, 1, workerTileB1)
-		board.PlaceWorker(2, 2, workerTileB2)
-
-		team1 := bots.NewBasicBot(1, board)
-		team2 := bots.NewKyleBot(2, board)
-		/*
-			team2 := bots.NewBasicBot(2, board)
-			team1 := bots.KyleBot{
-				Team:      1,
-				EnemyTeam: 2,
-				Board:     board,
-			}
-		*/
-
+		board := defaultPosition()
 		// Initialize Simulation
 		sim := &Simulation{
 			Number: i,
-			Team1:  team1,
-			Team2:  team2,
+			Team1:  bots.NewBasicBot(1, board),
+			Team2:  bots.NewKyleBot(2, board),
 			Board:  board,
 		}
 		sim.Run()
 
-		fmt.Printf("Final Board:\n%s\n", board)
+		board = defaultPosition()
+		// Initialize Simulation
+		sim = &Simulation{
+			Number: i,
+			Team1:  bots.NewKyleBot(1, board),
+			Team2:  bots.NewBasicBot(2, board),
+			Board:  board,
+		}
+		sim.Run()
+		//fmt.Printf("Final Board:\n%s\n", board)
 		if board.Victor == 1 {
 			team1Wins += 1
 		} else {
