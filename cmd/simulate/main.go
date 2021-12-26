@@ -85,16 +85,6 @@ func main() {
 		board.PlaceWorker(2, 1, workerTileB1)
 		board.PlaceWorker(2, 2, workerTileB2)
 
-		team1 := bots.NewBasicBot(1, board)
-		team2 := bots.NewKyleBot(2, board)
-		/*
-			team2 := bots.NewBasicBot(2, board)
-			team1 := bots.KyleBot{
-				Team:      1,
-				EnemyTeam: 2,
-				Board:     board,
-			}
-		*/
 		team1 := bots.NewRandomBot(1, board)
 		team2 := bots.NewKyleBot(2, board)
 
