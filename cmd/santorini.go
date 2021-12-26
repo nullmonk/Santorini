@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	santorini "santorini/pkg"
+	"santorini/pkg/color"
 	"strconv"
 	"strings"
 )
@@ -48,7 +49,7 @@ func main() {
 	// REPL
 	reader := bufio.NewReader(os.Stdin)
 	for round := 0; round < 1000; round++ {
-		fmt.Printf("Starting Round %d\n", round)
+		fmt.Printf("\nStarting Round %d\n\n", round+1)
 		// Print the board
 		fmt.Println(board)
 
@@ -83,9 +84,10 @@ func main() {
 		}
 
 		board.PlayTurn(*turn1)
-		fmt.Printf("Team 1: Moves %d:%d to %d,%d and builds %d,%d\n",
-			turn1.Worker.Team,
+		fmt.Printf("Team 1 moves %sWorker %d%s to %d,%d and builds %d,%d\n",
+			color.GetWorkerColor(turn1.Worker.Team, turn1.Worker.Number),
 			turn1.Worker.Number,
+			color.Reset,
 			turn1.MoveTo.GetX(),
 			turn1.MoveTo.GetY(),
 			turn1.Build.GetX(),
@@ -100,9 +102,10 @@ func main() {
 			break
 		}
 		board.PlayTurn(*turn2)
-		fmt.Printf("Team 2: Moves %d:%d to %d,%d and builds %d,%d\n",
-			turn2.Worker.Team,
+		fmt.Printf("Team 2 moves %sWorker %d%s to %d,%d and builds %d,%d\n",
+			color.GetWorkerColor(turn2.Worker.Team, turn2.Worker.Number),
 			turn2.Worker.Number,
+			color.Reset,
 			turn2.MoveTo.GetX(),
 			turn2.MoveTo.GetY(),
 			turn2.Build.GetX(),

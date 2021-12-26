@@ -14,19 +14,7 @@ func (tile Tile) String() (display string) {
 		return
 	}
 
-	if tile.Worker.Team == 1 && tile.Worker.Number == 1 {
-		display = fmt.Sprintf("%s%s%s", color.Blue, display, color.Reset)
-	}
-	if tile.Worker.Team == 1 && tile.Worker.Number == 2 {
-		display = fmt.Sprintf("%s%s%s", color.Green, display, color.Reset)
-	}
-	if tile.Worker.Team == 2 && tile.Worker.Number == 1 {
-		display = fmt.Sprintf("%s%s%s", color.Red, display, color.Reset)
-	}
-	if tile.Worker.Team == 2 && tile.Worker.Number == 2 {
-		display = fmt.Sprintf("%s%s%s", color.Yellow, display, color.Reset)
-	}
-
+	display = fmt.Sprintf("%s%s%s", color.GetWorkerColor(tile.Worker.Team, tile.Worker.Number), display, color.Reset)
 	return
 }
 
