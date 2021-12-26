@@ -1,12 +1,11 @@
 package santorini
 
 type Team struct {
-	WorkerOne Worker
-	WorkerTwo Worker
+	Workers []*Worker
 }
 
 type Turn struct {
-	Worker
+	Worker Worker
 	MoveTo Tile
 	Build  Tile
 }
