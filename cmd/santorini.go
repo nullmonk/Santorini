@@ -31,7 +31,10 @@ func main() {
 	board.PlaceWorker(2, 1, workerTileB1)
 	board.PlaceWorker(2, 2, workerTileB2)
 
-	team1 := bots.NewBasicBot(2, board)
+	// Initialize RNG Team 1
+	team1 := bots.NewBasicBot(1, board)
+
+	// Initialize Team 2
 	team2 := bots.KyleBot{
 		Team:      1,
 		Board:     board,
