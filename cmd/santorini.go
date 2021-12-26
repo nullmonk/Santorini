@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 	"santorini/bots"
@@ -39,9 +38,10 @@ func main() {
 	}
 
 	// Initialize Team 2
-	team2 := bots.RandomSelector{
-		Team:  2,
-		Board: board,
+	team2 := bots.KyleBot{
+		Team:      2,
+		EnemyTeam: 1,
+		Board:     board,
 	}
 
 	// REPL
@@ -72,15 +72,14 @@ func main() {
 			fmt.Printf("%+v\n", tile)
 		}
 
-		// Team 1 Move
+		// Team 1 Select
 		turn1 := team1.SelectTurn()
 		if turn1 == nil {
 			fmt.Printf("Team 2 Wins! Team 1 has no remaining moves\n")
 			break
 		}
 
-		turn1Data, _ := json.Marshal(turn1)
-		fmt.Printf("Turn JSON: %s\n", turn1Data)
+		// Team 1 Play
 		fmt.Printf("Team 1 moves %sWorker %d%s to %d,%d and builds %d,%d\n",
 			color.GetWorkerColor(turn1.Team, turn1.Worker),
 			turn1.Worker,
@@ -91,21 +90,19 @@ func main() {
 			turn1.Build.GetY(),
 		)
 		if board.PlayTurn(*turn1) {
-			fmt.Printf("Team 1 Wins!")
+			fmt.Printf("Team 1 Wins!\n")
 			break
 		}
 		fmt.Printf("\n%s\n\n", board)
-		data, _ := json.Marshal(board)
-		fmt.Printf("DEBUG\n\n%s\n\n", string(data))
 
-		// Team 2 Move
+		// Team 2 Select
 		turn2 := team2.SelectTurn()
 		if turn2 == nil {
 			fmt.Printf("Team 1 Wins! Team 2 has no remaining moves\n")
 			break
 		}
-		turn2Data, _ := json.Marshal(turn2)
-		fmt.Printf("Turn JSON: %s\n", turn2Data)
+
+		// Team 2 Play
 		fmt.Printf("Team 2 moves %sWorker %d%s to %d,%d and builds %d,%d\n",
 			color.GetWorkerColor(turn2.Team, turn2.Worker),
 			turn2.Worker,
@@ -116,11 +113,11 @@ func main() {
 			turn2.Build.GetY(),
 		)
 		if board.PlayTurn(*turn2) {
-			fmt.Printf("Team 2 Wins!")
+			fmt.Printf("Team 2 Wins!\n")
 			break
 		}
 		fmt.Printf("\n%s\n\n", board)
-		data, _ = json.Marshal(board)
-		fmt.Printf("DEBUG\n\n%s\n\n", string(data))
 	}
+
+	fmt.Printf("Final Board:\n%s\n", board)
 }

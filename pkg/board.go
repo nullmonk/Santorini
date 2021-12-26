@@ -1,6 +1,9 @@
 package santorini
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 type Board struct {
 	Size  int
@@ -45,6 +48,11 @@ func NewBoard(options ...func(*Board)) *Board {
 	return board
 }
 
+func (board Board) GetTiles() (tiles []Tile) {
+	copy(tiles, board.Tiles)
+	return
+}
+
 func (board Board) GetTile(x, y int) (t Tile) {
 	if x >= board.Size {
 		panic(fmt.Errorf("invalid x"))
@@ -81,7 +89,7 @@ func (board Board) GetSurroundingTiles(x, y int) (tiles []Tile) {
 		{x - 1, y},     // West
 		{x + 1, y + 1}, // Northeast
 		{x - 1, y + 1}, // Northwest
-		{x - 1, y + 1}, // Southeast
+		{x + 1, y - 1}, // Southeast
 		{x - 1, y - 1}, // Southwest
 	}
 
@@ -122,7 +130,7 @@ func (board Board) GetMoveableTiles(curTile Tile) (tiles []Tile) {
 		}
 
 		// Otherwise, it is a valid move
-		tiles = append(tiles, candidate)
+		tiles = append(tiles, board.GetTile(candidate.x, candidate.y))
 	}
 
 	return
@@ -144,8 +152,8 @@ func (board Board) GetBuildableTiles(team, worker int, buildTile Tile) (tiles []
 			continue
 		}
 
-		// Otherwise, it is a valid move
-		tiles = append(tiles, candidate)
+		// Otherwise, it is a valid build
+		tiles = append(tiles, board.GetTile(candidate.x, candidate.y))
 	}
 
 	return
@@ -163,7 +171,7 @@ func (board *Board) PlayTurn(turn Turn) (gameover bool) {
 	board.Moves = append(board.Moves, turn)
 
 	// 1. Clear existing tile
-	workerTile := board.getWorkerTile(turn.Team, turn.Worker)
+	workerTile := board.GetWorkerTile(turn.Team, turn.Worker)
 	workerTile.team = 0
 	workerTile.worker = 0
 	board.setTile(workerTile)
@@ -183,6 +191,10 @@ func (board *Board) PlayTurn(turn Turn) (gameover bool) {
 
 	// 4. Build
 	buildTile := board.GetTile(turn.Build.x, turn.Build.y)
+	log.Printf("Attempting to build tile: %+v\n", buildTile)
+	if buildTile.height > 3 {
+		panic(fmt.Errorf("cannot build tile %+v", turn))
+	}
 	buildTile.height += 1
 	board.setTile(buildTile)
 
