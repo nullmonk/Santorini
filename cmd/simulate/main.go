@@ -8,11 +8,7 @@ import (
 	santorini "santorini/pkg"
 )
 
-<<<<<<< HEAD
-const MaxSimulations = 3
-=======
 const MaxSimulations = 10000
->>>>>>> origin/main
 
 type TurnSelector interface {
 	SelectTurn() *santorini.Turn
@@ -65,10 +61,7 @@ func (sim *Simulation) doRound() bool {
 // Run a game until it's completion
 func (sim *Simulation) Run() {
 	for !sim.doRound() {
-<<<<<<< HEAD
 		//log.Printf("Completed Round %d", sim.round)
-=======
->>>>>>> origin/main
 	}
 
 	log.Printf("Simulation %d Completed, Team %d won after %d rounds", sim.Number, sim.Board.Victor, sim.round)
@@ -96,37 +89,6 @@ func main() {
 	team2Wins := 0
 
 	for i := 0; i < MaxSimulations; i++ {
-<<<<<<< HEAD
-=======
-		// Initialize a new board
-		board := santorini.NewBoard()
-
-		// Select Worker Tiles
-		workerTileA1 := board.GetTile(2, 1)
-		workerTileA2 := board.GetTile(2, 3)
-		workerTileB1 := board.GetTile(1, 2)
-		workerTileB2 := board.GetTile(3, 2)
-
-		// Place Workers
-		board.PlaceWorker(1, 1, workerTileA1)
-		board.PlaceWorker(1, 2, workerTileA2)
-		board.PlaceWorker(2, 1, workerTileB1)
-		board.PlaceWorker(2, 2, workerTileB2)
-
-		team1 := bots.NewBasicBot(1, board)
-		team2 := bots.NewKyleBot(2, board)
-		/*
-			team2 := bots.NewBasicBot(2, board)
-			team1 := bots.KyleBot{
-				Team:      1,
-				EnemyTeam: 2,
-				Board:     board,
-			}
-		*/
-		team1 := bots.NewRandomBot(1, board)
-		team2 := bots.NewKyleBot(2, board)
->>>>>>> origin/main
-
 		board := defaultPosition()
 		// Initialize Simulation
 		sim := &Simulation{
