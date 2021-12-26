@@ -93,7 +93,7 @@ func main() {
 		// Initialize Simulation
 		sim := &Simulation{
 			Number: i,
-			Team1:  bots.NewBasicBot(1, board),
+			Team1:  bots.NewRandomBot(1, board),
 			Team2:  bots.NewKyleBot(2, board),
 			Board:  board,
 		}
@@ -103,8 +103,8 @@ func main() {
 		// Initialize Simulation
 		sim = &Simulation{
 			Number: i,
-			Team1:  bots.NewKyleBot(1, board),
-			Team2:  bots.NewBasicBot(2, board),
+			Team1:  bots.NewRandomBot(1, board),
+			Team2:  bots.NewKyleBot(2, board),
 			Board:  board,
 		}
 		sim.Run()
