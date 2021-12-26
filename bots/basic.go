@@ -113,29 +113,37 @@ func (bb *BasicBot) rankMove(turn santorini.Turn) int {
 
 	worker := bb.Workers[turn.Worker]
 	// if the worker is moving up/down, add/remove points (going up good)
-	rank += turn.MoveTo.GetHeight() - worker.GetHeight()
+	rank += (turn.MoveTo.GetHeight() - worker.GetHeight()) * 10
 
 	// if the move will limit us in the future, subtract a point
 	if len(bb.Board.GetMoveableTiles(turn.MoveTo)) < 2 {
-		rank -= 1
+		rank -= 10
 	}
 	if len(bb.Board.GetBuildableTiles(bb.Team, -1, turn.MoveTo)) < 2 {
-		rank -= 1
+		rank -= 10
 	}
 
 	// Dont build 2 up (unless capping, which is already handled)
 	if turn.Build.GetHeight()+1 > turn.MoveTo.GetHeight()+1 {
-		rank -= 2
+		rank -= 20
 	} else if turn.Build.GetHeight()+1 == 3 {
 		// If the build is increasing the height to 3, super rank it
-		rank += 2
+		rank += 20
 	} else if turn.Build.GetHeight() > turn.MoveTo.GetHeight() {
-		rank += 1
+		rank += 10
+	}
+
+	// Build on blocks that are touching other blocks laterally
+	for _, tile := range bb.Board.GetSurroundingTiles(turn.Build.GetX(), turn.Build.GetY()) {
+		// Build next to tiles that are already built
+		if tile.GetHeight() > 0 {
+			rank += 3
+		}
 	}
 
 	// use the recommended worker
 	if turn.Worker == bb.chosenWorker {
-		rank += 1
+		rank += 10
 	}
 	return rank
 }
