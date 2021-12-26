@@ -12,6 +12,13 @@ type RandomSelector struct {
 	Board *santorini.Board
 }
 
+func NewRandomBot(team int, board *santorini.Board) RandomSelector {
+	return RandomSelector{
+		Team:  team,
+		Board: board,
+	}
+}
+
 // SelectTurn at random, returns nil if no move can be made
 func (r RandomSelector) SelectTurn() *santorini.Turn {
 	candidates := r.Board.GetValidTurns(r.Team)

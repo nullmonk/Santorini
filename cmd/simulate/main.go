@@ -1,13 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"santorini/bots"
 	santorini "santorini/pkg"
 )
 
-const MaxSimulations = 100
+const MaxSimulations = 10000
 
 type TurnSelector interface {
 	SelectTurn() *santorini.Turn
@@ -59,7 +60,6 @@ func (sim *Simulation) doRound() bool {
 // Run a game until it's completion
 func (sim *Simulation) Run() {
 	for !sim.doRound() {
-		log.Printf("Completed Round %d", sim.round)
 	}
 
 	log.Printf("Simulation %d Completed, Team %d won after %d rounds", sim.Number, sim.Board.Victor, sim.round)
@@ -93,7 +93,7 @@ func main() {
 				Board:     board,
 			}
 		*/
-		team1 := bots.NewBasicBot(1, board)
+		team1 := bots.NewRandomBot(1, board)
 		team2 := bots.NewKyleBot(2, board)
 
 		// Initialize Simulation
@@ -107,6 +107,8 @@ func main() {
 
 		fmt.Printf("Final Board:\n%s\n", board)
 		if board.Victor == 1 {
+			logData, _ := json.Marshal(board.Moves)
+			fmt.Printf("LOSS DATA: %s\n", string(logData))
 			team1Wins += 1
 		} else {
 			team2Wins += 1
