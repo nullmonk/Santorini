@@ -3,8 +3,8 @@ package santorini
 import "fmt"
 
 type Tile struct {
-	Height int // 0 no building, 4 capped
-	Worker *Worker
+	Height int     // 0 no building, 4 capped
+	Worker *Worker `json:",omitempty"`
 
 	x uint8
 	y uint8
@@ -23,6 +23,14 @@ func (t Tile) IsOccupiedBy(worker Worker) bool {
 
 func (t Tile) IsCapped() bool {
 	return t.Height > 3
+}
+
+func (t Tile) GetX() uint8 {
+	return t.x
+}
+
+func (t Tile) GetY() uint8 {
+	return t.y
 }
 
 type Board struct {
@@ -106,7 +114,7 @@ func (board Board) GetSurroundingTiles(x, y uint8) (tiles []Tile) {
 		}
 
 		// Otherwise, it is a valid tile
-		tiles = append(tiles, *board.GetTile(x, y))
+		tiles = append(tiles, *board.GetTile(candidate.X, candidate.Y))
 	}
 
 	return
@@ -198,4 +206,6 @@ func (board *Board) PlayTurn(turn Turn) (gameover bool) {
 
 func (board *Board) PlaceWorker(worker *Worker, x, y uint8) {
 	board.Tiles[x][y].Worker = worker
+	worker.X = x
+	worker.Y = y
 }
