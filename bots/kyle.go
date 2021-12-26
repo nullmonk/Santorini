@@ -1,7 +1,6 @@
 package bots
 
 import (
-	"math"
 	santorini "santorini/pkg"
 )
 
@@ -11,9 +10,21 @@ type KyleBot struct {
 	Board     *santorini.Board
 }
 
+func NewKyleBot(team int, board *santorini.Board) KyleBot {
+	enemy := 1
+	if team == 2 {
+		enemy = 1
+	}
+	return KyleBot{
+		Team:      team,
+		EnemyTeam: enemy,
+		Board:     board,
+	}
+}
+
 func (bot KyleBot) SelectTurn() *santorini.Turn {
-	worker1 := bot.Board.GetWorkerTile(bot.Team, 1)
-	worker2 := bot.Board.GetWorkerTile(bot.Team, 2)
+	// worker1 := bot.Board.GetWorkerTile(bot.Team, 1)
+	// worker2 := bot.Board.GetWorkerTile(bot.Team, 2)
 	enemyWorker1 := bot.Board.GetWorkerTile(bot.EnemyTeam, 1)
 	enemyWorker2 := bot.Board.GetWorkerTile(bot.EnemyTeam, 2)
 
@@ -36,25 +47,14 @@ func (bot KyleBot) SelectTurn() *santorini.Turn {
 		// Initialize Weight
 		weight := 0
 
-		// Weight based on height
-		weight += 100 * candidate.MoveTo.GetHeight()
-		if candidate.Worker == 1 {
-			if worker1.GetHeight() < candidate.MoveTo.GetHeight() {
-				weight += int(math.Abs(float64(10 * (candidate.MoveTo.GetHeight() - worker1.GetHeight()))))
-			} else if worker1.GetHeight() > candidate.MoveTo.GetHeight() {
-				weight -= int(math.Abs(float64(10 * (worker1.GetHeight() - candidate.MoveTo.GetHeight()))))
-			}
-		} else if candidate.Worker == 2 {
-			if worker2.GetHeight() < candidate.MoveTo.GetHeight() {
-				weight += int(math.Abs(float64(10 * (candidate.MoveTo.GetHeight() - worker2.GetHeight()))))
-			} else if worker2.GetHeight() < candidate.MoveTo.GetHeight() {
-				weight -= int(math.Abs(float64(10 * (worker2.GetHeight() - candidate.MoveTo.GetHeight()))))
-			}
-		}
+		// Weight based on move height
+		weight += 10 * candidate.MoveTo.GetHeight()
 
 		// Weight based on build height
-		if candidate.Build.GetHeight() > candidate.MoveTo.GetHeight() {
-			weight -= 30 * int(math.Abs(float64(candidate.Build.GetHeight()-candidate.MoveTo.GetHeight())))
+		if !bot.hasNearbyEnemyWorker(bot.Board.GetSurroundingTiles(candidate.Build.GetX(), candidate.Build.GetY())...) {
+			weight += 10 * (candidate.Build.GetHeight() + 1)
+		} else {
+			weight -= 50 * (candidate.Build.GetHeight() + 1)
 		}
 
 		// Avoid building near enemy workers
@@ -93,10 +93,39 @@ func (bot KyleBot) SelectTurn() *santorini.Turn {
 			}
 		}
 
+		thoughtBoard := bot.copyBoard()
+		thoughtBoard.PlayTurn(candidate)
+		futureEnemyCandidates := thoughtBoard.GetValidTurns(bot.EnemyTeam)
+		for _, enemyCandidate := range futureEnemyCandidates {
+			if enemyCandidate.IsVictory() {
+				weight -= 1000
+				break
+			}
+		}
+
 		if weight > maxWeight {
 			bestIndex = index
 		}
 	}
 
 	return &candidates[bestIndex]
+}
+
+func (bot KyleBot) copyBoard() santorini.Board {
+	tiles := make([]santorini.Tile, len(bot.Board.Tiles))
+	copy(tiles, bot.Board.Tiles)
+	return santorini.Board{
+		Size:  bot.Board.Size,
+		Tiles: tiles,
+	}
+}
+
+func (bot KyleBot) hasNearbyEnemyWorker(tiles ...santorini.Tile) bool {
+	for _, tile := range tiles {
+		if tile.GetTeam() == bot.EnemyTeam {
+			return true
+		}
+	}
+
+	return false
 }
