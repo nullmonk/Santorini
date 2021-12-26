@@ -36,8 +36,18 @@ func main() {
 
 	// Initialize Team 2
 	team2 := bots.NewKyleBot(2, board)
+<<<<<<< HEAD
 
 	// REPL
+=======
+	fmt.Println("Team 1 - BasicBot")
+	fmt.Printf("%sTeam 1 - Worker 1%s\n", color.GetWorkerColor(1, 1), color.Reset)
+	fmt.Printf("%sTeam 1 - Worker 2%s\n", color.GetWorkerColor(1, 2), color.Reset)
+	fmt.Printf("%sTeam 2 - Worker 1%s\n", color.GetWorkerColor(2, 1), color.Reset)
+	fmt.Printf("%sTeam 2 - Worker 2%s\n", color.GetWorkerColor(2, 2), color.Reset)
+
+  // REPL
+>>>>>>> origin/main
 	reader := bufio.NewReader(os.Stdin)
 	for round := 0; round < 1000; round++ {
 		fmt.Printf("\nStarting Round %d\n\n", round+1)

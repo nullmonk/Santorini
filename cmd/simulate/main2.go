@@ -1,18 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"santorini/bots"
 	santorini "santorini/pkg"
 )
 
-<<<<<<< HEAD
-const MaxSimulations = 3
-=======
-const MaxSimulations = 10000
->>>>>>> origin/main
+const MaxSimulations = 1000
 
 type TurnSelector interface {
 	SelectTurn() *santorini.Turn
@@ -65,10 +60,7 @@ func (sim *Simulation) doRound() bool {
 // Run a game until it's completion
 func (sim *Simulation) Run() {
 	for !sim.doRound() {
-<<<<<<< HEAD
 		//log.Printf("Completed Round %d", sim.round)
-=======
->>>>>>> origin/main
 	}
 
 	log.Printf("Simulation %d Completed, Team %d won after %d rounds", sim.Number, sim.Board.Victor, sim.round)
@@ -94,62 +86,23 @@ func defaultPosition() *santorini.Board {
 func main() {
 	team1Wins := 0
 	team2Wins := 0
+	fmt.Printf("Team 1: %v\nTeam 2: %v\n", new(bots.BasicBot).Name(), new(bots.KyleBot).Name())
 
 	for i := 0; i < MaxSimulations; i++ {
-<<<<<<< HEAD
-=======
-		// Initialize a new board
-		board := santorini.NewBoard()
-
-		// Select Worker Tiles
-		workerTileA1 := board.GetTile(2, 1)
-		workerTileA2 := board.GetTile(2, 3)
-		workerTileB1 := board.GetTile(1, 2)
-		workerTileB2 := board.GetTile(3, 2)
-
-		// Place Workers
-		board.PlaceWorker(1, 1, workerTileA1)
-		board.PlaceWorker(1, 2, workerTileA2)
-		board.PlaceWorker(2, 1, workerTileB1)
-		board.PlaceWorker(2, 2, workerTileB2)
-
-		team1 := bots.NewBasicBot(1, board)
-		team2 := bots.NewKyleBot(2, board)
-		/*
-			team2 := bots.NewBasicBot(2, board)
-			team1 := bots.KyleBot{
-				Team:      1,
-				EnemyTeam: 2,
-				Board:     board,
-			}
-		*/
-		team1 := bots.NewRandomBot(1, board)
-		team2 := bots.NewKyleBot(2, board)
->>>>>>> origin/main
 
 		board := defaultPosition()
 		// Initialize Simulation
 		sim := &Simulation{
 			Number: i,
 			Team1:  bots.NewBasicBot(1, board),
-			Team2:  bots.NewKyleBot(2, board),
-			Board:  board,
+			Team2: bots.RandomSelector{
+				Team:  2,
+				Board: board,
+			},
+			Board: board,
 		}
 		sim.Run()
-
-		board = defaultPosition()
-		// Initialize Simulation
-		sim = &Simulation{
-			Number: i,
-			Team1:  bots.NewKyleBot(1, board),
-			Team2:  bots.NewBasicBot(2, board),
-			Board:  board,
-		}
-		sim.Run()
-		//fmt.Printf("Final Board:\n%s\n", board)
 		if board.Victor == 1 {
-			logData, _ := json.Marshal(board.Moves)
-			fmt.Printf("LOSS DATA: %s\n", string(logData))
 			team1Wins += 1
 		} else {
 			team2Wins += 1

@@ -4,6 +4,8 @@ import (
 	santorini "santorini/pkg"
 )
 
+const maxDepth = 1
+
 type KyleBot struct {
 	Team      int
 	EnemyTeam int
@@ -51,6 +53,7 @@ func (bot KyleBot) SelectTurn() *santorini.Turn {
 			}
 		}
 
+<<<<<<< HEAD
 		// Initialize Weight
 		weight := 0
 
@@ -82,6 +85,9 @@ func (bot KyleBot) SelectTurn() *santorini.Turn {
 				break
 			}
 		}
+=======
+		weight := bot.getWeight(candidate)
+>>>>>>> origin/main
 
 		if weight > maxWeight {
 			maxWeight = weight
@@ -105,10 +111,65 @@ func (bot KyleBot) copyBoard() santorini.Board {
 	}
 }
 
+<<<<<<< HEAD
 func (bot KyleBot) hasNearbyEnemyWorker(tile santorini.Tile) bool {
 	surroundingTiles := bot.Board.GetSurroundingTiles(tile.GetX(), tile.GetY())
 	for _, tile := range surroundingTiles {
 		if tile.GetTeam() == bot.EnemyTeam {
+=======
+func (bot KyleBot) getWeight(candidate santorini.Turn) int {
+	// Initialize Weight
+	weight := 0
+
+	// Prefer to move up
+	weight += candidate.MoveTo.GetHeight() * 20
+
+	// Prefer to cover the most tiles
+	weight += len(bot.Board.GetSurroundingTiles(candidate.MoveTo.GetX(), candidate.MoveTo.GetY()))
+
+	// Prefer to build high if no enemies are near
+	if !bot.hasNearbyEnemyWorker(candidate.Team, candidate.Build) {
+		weight += (candidate.Build.GetHeight() + 1) * 10
+	}
+
+	// Don't build what you cannot reach
+	if candidate.MoveTo.GetHeight() < candidate.Build.GetHeight() {
+		weight -= 50
+	}
+
+	// Ponder the moves to come
+	thoughtBoard := bot.copyBoard()
+	thoughtBoard.PlayTurn(candidate)
+
+	// Prefer moves that enable us to win next turn
+	futureCandidates := thoughtBoard.GetValidTurns(bot.Team)
+	for _, futureCandidate := range futureCandidates {
+		if futureCandidate.IsVictory() {
+			weight += 1000
+		}
+	}
+
+	// Avoid moves that enable an enemy win next turn
+	futureEnemyCandidates := thoughtBoard.GetValidTurns(bot.EnemyTeam)
+	for _, futureEnemyCandidate := range futureEnemyCandidates {
+		if futureEnemyCandidate.IsVictory() {
+			weight -= 100000
+		}
+	}
+
+	return weight
+}
+
+func (bot KyleBot) hasNearbyEnemyWorker(friendly int, tile santorini.Tile) bool {
+	surroundingTiles := bot.Board.GetSurroundingTiles(tile.GetX(), tile.GetY())
+	for _, surroundingTile := range surroundingTiles {
+		if team := surroundingTile.GetTeam(); team != 0 && team != friendly {
+			// Enemy worker cannot navigate to the new tile if built
+			if surroundingTile.GetHeight() < tile.GetHeight() {
+				continue
+			}
+
+>>>>>>> origin/main
 			return true
 		}
 	}
