@@ -2,32 +2,9 @@ package santorini
 
 import "fmt"
 
-type Tile struct {
-	Height int // 0 no building, 4 capped
-	Worker *Worker
-
-	x uint8
-	y uint8
-}
-
-func (t Tile) IsOccupied() bool {
-	return t.Worker != nil
-}
-func (t Tile) IsOccupiedBy(worker Worker) bool {
-	if t.Worker == nil {
-		return false
-	}
-
-	return t.Worker.Team == worker.Team && t.Worker.Number == worker.Number
-}
-
-func (t Tile) IsCapped() bool {
-	return t.Height > 3
-}
-
 type Board struct {
-	Size  uint8
-	Tiles [][]*Tile
+	Size  int
+	Tiles []Tile
 
 	IsOver bool
 	Victor int // Who won the game
@@ -54,14 +31,13 @@ func NewBoard(options ...func(*Board)) *Board {
 	}
 
 	// Build Tiles
-	board.Tiles = make([][]*Tile, board.Size)
-	for x := 0; x < int(board.Size); x++ {
-		board.Tiles[x] = make([]*Tile, board.Size)
-
-		for y := 0; y < int(board.Size); y++ {
-			board.Tiles[x][y] = &Tile{
-				x: uint8(x),
-				y: uint8(y),
+	board.Tiles = make([]Tile, board.Size*board.Size)
+	for x := 0; x < board.Size; x++ {
+		for y := 0; y < board.Size; y++ {
+			index := (board.Size * y) + x
+			board.Tiles[index] = Tile{
+				x: x,
+				y: y,
 			}
 		}
 	}
@@ -69,21 +45,34 @@ func NewBoard(options ...func(*Board)) *Board {
 	return board
 }
 
-func (board Board) GetTile(x, y uint8) (t *Tile) {
-	if x >= BoardSize {
+func (board Board) GetTile(x, y int) (t Tile) {
+	if x >= board.Size {
 		panic(fmt.Errorf("invalid x"))
 	}
-	if y >= BoardSize {
+	if y >= board.Size {
 		panic(fmt.Errorf("invalid y"))
 	}
-	return board.Tiles[x][y]
+	index := (board.Size * y) + x
+	return board.Tiles[index]
 }
 
-func (board Board) GetSurroundingTiles(x, y uint8) (tiles []Tile) {
+func (board *Board) setTile(tile Tile) {
+	if tile.x >= board.Size || tile.x < 0 {
+		panic(fmt.Errorf("invalid x %d", tile.x))
+	}
+	if tile.y >= board.Size || tile.y < 0 {
+		panic(fmt.Errorf("invalid y %d", tile.y))
+	}
+
+	index := (board.Size * tile.y) + tile.x
+	board.Tiles[index] = tile
+}
+
+func (board Board) GetSurroundingTiles(x, y int) (tiles []Tile) {
 	// List all surrounding tiles
 	type Position struct {
-		X uint8
-		Y uint8
+		X int
+		Y int
 	}
 	candidates := []Position{
 		{x, y + 1},     // North
@@ -98,23 +87,23 @@ func (board Board) GetSurroundingTiles(x, y uint8) (tiles []Tile) {
 
 	// Filter potential tiles
 	for _, candidate := range candidates {
-		if candidate.X >= board.Size {
+		if candidate.X >= board.Size || candidate.X < 0 {
 			continue
 		}
-		if candidate.Y >= board.Size {
+		if candidate.Y >= board.Size || candidate.Y < 0 {
 			continue
 		}
 
 		// Otherwise, it is a valid tile
-		tiles = append(tiles, *board.GetTile(x, y))
+		tiles = append(tiles, board.GetTile(candidate.X, candidate.Y))
 	}
 
 	return
 }
 
 // GetMoveableTiles returns all tiles that may be moved to from the provided position.
-func (board Board) GetMoveableTiles(x, y uint8) (tiles []Tile) {
-	candidates := board.GetSurroundingTiles(x, y)
+func (board Board) GetMoveableTiles(curTile Tile) (tiles []Tile) {
+	candidates := board.GetSurroundingTiles(curTile.x, curTile.y)
 	// Filter invalid tiles
 	for _, candidate := range candidates {
 		// Occupied Constraints
@@ -128,8 +117,7 @@ func (board Board) GetMoveableTiles(x, y uint8) (tiles []Tile) {
 		}
 
 		// Height Constraints
-		curTile := board.GetTile(x, y)
-		if candidate.Height > curTile.Height+1 {
+		if candidate.height > curTile.height+1 {
 			continue
 		}
 
@@ -141,13 +129,13 @@ func (board Board) GetMoveableTiles(x, y uint8) (tiles []Tile) {
 }
 
 // GetBuildableTiles returns all tiles that may be built from the provided position.
-func (board Board) GetBuildableTiles(x, y uint8, worker Worker) (tiles []Tile) {
-	candidates := board.GetSurroundingTiles(x, y)
+func (board Board) GetBuildableTiles(team, worker int, buildTile Tile) (tiles []Tile) {
+	candidates := board.GetSurroundingTiles(buildTile.x, buildTile.y)
 
 	// Filter invalid tiles
 	for _, candidate := range candidates {
 		// Occupied Constraints
-		if candidate.IsOccupied() && !candidate.IsOccupiedBy(worker) {
+		if candidate.IsOccupied() && !candidate.IsOccupiedBy(team, worker) {
 			continue
 		}
 
@@ -163,39 +151,49 @@ func (board Board) GetBuildableTiles(x, y uint8, worker Worker) (tiles []Tile) {
 	return
 }
 
+// PlayTurn will update the board state with the results of the provided turn, or panic if the turn is illegal
 func (board *Board) PlayTurn(turn Turn) (gameover bool) {
+	if turn.Team == 0 {
+		panic(fmt.Errorf("must set team taking the turn: %+v", turn))
+	}
+	if turn.Worker == 0 {
+		panic(fmt.Errorf("must set worker used for the turn: %+v", turn))
+	}
+
 	board.Moves = append(board.Moves, turn)
 
-	// Step 1. Move
-	srcTile := board.Tiles[turn.Worker.X][turn.Worker.Y]
-	worker := srcTile.Worker
+	// 1. Clear existing tile
+	workerTile := board.getWorkerTile(turn.Team, turn.Worker)
+	workerTile.team = 0
+	workerTile.worker = 0
+	board.setTile(workerTile)
 
-	dstTile := board.Tiles[turn.MoveTo.x][turn.MoveTo.y]
+	// 2. Update destination tile
+	dstTile := board.GetTile(turn.MoveTo.x, turn.MoveTo.y)
+	dstTile.team = turn.Team
+	dstTile.worker = turn.Worker
+	board.setTile(dstTile)
 
-	// TODO Validate the move here
-
-	// Update the worker location
-	worker.X = turn.MoveTo.x
-	worker.Y = turn.MoveTo.y
-
-	srcTile.Worker = nil
-	dstTile.Worker = worker
-
-	// Check if the game has been won
-	if dstTile.Height == 3 {
-		board.Victor = worker.Team
+	// 3. Check if the game has been won
+	if dstTile.height == 3 {
+		board.Victor = turn.Team
 		board.IsOver = true
 		return true
 	}
 
-	// Step 2. Build
-	dstTile = board.Tiles[turn.Build.x][turn.Build.y]
+	// 4. Build
+	buildTile := board.GetTile(turn.Build.x, turn.Build.y)
+	buildTile.height += 1
+	board.setTile(buildTile)
 
-	// Validate the build here
-	dstTile.Height += 1
+	// The Game Continues...
 	return false
 }
 
-func (board *Board) PlaceWorker(worker *Worker, x, y uint8) {
-	board.Tiles[x][y].Worker = worker
+// PlaceWorker on the board, should be called before any turns are made
+func (board *Board) PlaceWorker(team, worker int, tile Tile) {
+	workerTile := board.GetTile(tile.x, tile.y)
+	workerTile.team = team
+	workerTile.worker = worker
+	board.setTile(workerTile)
 }
