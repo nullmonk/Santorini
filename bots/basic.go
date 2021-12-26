@@ -124,14 +124,32 @@ func (bb *BasicBot) rankMove(turn santorini.Turn) int {
 	}
 
 	// Dont build 2 up (unless capping, which is already handled)
-	if turn.Build.GetHeight()+1 > turn.MoveTo.GetHeight()+1 {
+	if turn.Build.GetHeight() > turn.MoveTo.GetHeight()+1 {
 		rank -= 20
 	} else if turn.Build.GetHeight()+1 == 3 {
+		/*
+			// Make sure there isnt an enemy worker nearby
+			for _, tile := range bb.Board.GetSurroundingTiles(turn.Build.GetX(), turn.Build.GetY()) {
+				if tile.GetTeam() != bb.Team {
+					rank -= 11111111111 /// badbadbad
+				}
+			}
+		*/
 		// If the build is increasing the height to 3, super rank it
 		rank += 20
-	} else if turn.Build.GetHeight() > turn.MoveTo.GetHeight() {
+	} else if turn.Build.GetHeight()+1 > turn.MoveTo.GetHeight() {
+		// Building up next to ourselves is good (as oposed to starting on the ground)
 		rank += 10
 	}
+
+	/*
+		// Try not to give the enemy spots to rise up to
+		for _, tile := range bb.Board.GetSurroundingTiles(turn.Build.GetX(), turn.Build.GetY()) {
+			if tile.GetTeam() != bb.Team {
+				rank -= 10 /// badbadbad
+			}
+		}
+	*/
 
 	// Build on blocks that are touching other blocks laterally
 	for _, tile := range bb.Board.GetSurroundingTiles(turn.Build.GetX(), turn.Build.GetY()) {
