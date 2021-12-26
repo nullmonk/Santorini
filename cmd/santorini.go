@@ -36,9 +36,9 @@ func main() {
 
 	// Initialize Team 2
 	team2 := bots.KyleBot{
-		Team:      2,
-		EnemyTeam: 1,
+		Team:      1,
 		Board:     board,
+		EnemyTeam: 2,
 	}
 
 	// REPL
