@@ -28,9 +28,9 @@ func (t Tile) IsCapped() bool {
 type Board struct {
 	Size  uint8
 	Tiles [][]*Tile
-	Teams []Team
 
-	Victor *Team // Who won the game / is the game over
+	IsOver bool
+	Victor int // Who won the game
 	Moves  []Turn
 }
 
@@ -46,40 +46,6 @@ func NewBoard(options ...func(*Board)) *Board {
 	 */
 	board := &Board{
 		Size: 5,
-		Teams: []Team{
-			{
-				Workers: []*Worker{
-					{
-						Team:   0,
-						Number: 0,
-						X:      2,
-						Y:      1,
-					},
-					{
-						Team:   0,
-						Number: 1,
-						X:      2,
-						Y:      3,
-					},
-				},
-			},
-			{
-				Workers: []*Worker{
-					{
-						Team:   1,
-						Number: 0,
-						X:      1,
-						Y:      2,
-					},
-					{
-						Team:   1,
-						Number: 1,
-						X:      3,
-						Y:      2,
-					},
-				},
-			},
-		},
 	}
 
 	// Apply Options
@@ -200,11 +166,10 @@ func (board Board) GetBuildableTiles(x, y uint8, worker Worker) (tiles []Tile) {
 func (board *Board) PlayTurn(turn Turn) (gameover bool) {
 	board.Moves = append(board.Moves, turn)
 
-	team := board.Teams[turn.Worker.Team]
-	worker := team.Workers[turn.Worker.Number]
-
 	// Step 1. Move
 	srcTile := board.Tiles[turn.Worker.X][turn.Worker.Y]
+	worker := srcTile.Worker
+
 	dstTile := board.Tiles[turn.MoveTo.x][turn.MoveTo.y]
 
 	// TODO Validate the move here
@@ -218,7 +183,8 @@ func (board *Board) PlayTurn(turn Turn) (gameover bool) {
 
 	// Check if the game has been won
 	if dstTile.Height == 3 {
-		board.Victor = &team
+		board.Victor = worker.Team
+		board.IsOver = true
 		return true
 	}
 
@@ -228,4 +194,8 @@ func (board *Board) PlayTurn(turn Turn) (gameover bool) {
 	// Validate the build here
 	dstTile.Height += 1
 	return false
+}
+
+func (board *Board) PlaceWorker(worker *Worker, x, y uint8) {
+	board.Tiles[x][y].Worker = worker
 }
