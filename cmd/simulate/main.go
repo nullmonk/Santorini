@@ -7,7 +7,7 @@ import (
 	santorini "santorini/pkg"
 )
 
-const MaxSimulations = 1000
+const MaxSimulations = 100
 
 type TurnSelector interface {
 	SelectTurn() *santorini.Turn
@@ -86,10 +86,7 @@ func main() {
 		board.PlaceWorker(2, 2, workerTileB2)
 
 		// Initialize RNG Team 1
-		team1 := bots.RandomSelector{
-			Team:  1,
-			Board: board,
-		}
+		team1 := bots.NewBasicBot(1, board)
 
 		// Initialize Team 2
 		team2 := bots.KyleBot{
