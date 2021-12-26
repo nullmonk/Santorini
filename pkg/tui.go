@@ -7,26 +7,16 @@ import (
 	"santorini/pkg/color"
 )
 
-func (tile Tile) String() (display string) {
-	display = fmt.Sprintf("%d", tile.Height)
-
-	if tile.Worker == nil {
-		return
-	}
-
-	display = fmt.Sprintf("%s%s%s", color.GetWorkerColor(tile.Worker.Team, tile.Worker.Number), display, color.Reset)
-	return
-}
-
 func (board Board) String() string {
 	rows := make([]string, board.Size)
-	for x := 0; x < int(board.Size); x++ {
+	for y := 0; y < board.Size; y++ {
 		columns := make([]string, board.Size)
-		for y := 0; y < int(board.Size); y++ {
-			tile := board.GetTile(uint8(x), uint8(y))
-			columns = append(columns, tile.String())
+		for x := 0; x < board.Size; x++ {
+			tile := board.GetTile(x, y)
+			display := fmt.Sprintf("%s%d%s", color.GetWorkerColor(tile.team, tile.worker), tile.height, color.Reset)
+			columns = append(columns, display)
 		}
-		rows[x] = strings.Join(columns, " ")
+		rows[y] = strings.Join(columns, " ")
 	}
 
 	return strings.Join(rows, "\n")

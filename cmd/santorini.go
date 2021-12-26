@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	santorini "santorini/pkg"
@@ -18,28 +19,28 @@ func main() {
 	// Initialize a new board
 	board := santorini.NewBoard()
 
-	// Initialize team workers
-	workerA1 := &santorini.Worker{Team: 1, Number: 1}
-	workerA2 := &santorini.Worker{Team: 1, Number: 2}
-	workerB1 := &santorini.Worker{Team: 2, Number: 1}
-	workerB2 := &santorini.Worker{Team: 2, Number: 2}
+	// Select Worker Tiles
+	workerTileA1 := board.GetTile(2, 1)
+	workerTileA2 := board.GetTile(2, 3)
+	workerTileB1 := board.GetTile(1, 2)
+	workerTileB2 := board.GetTile(3, 2)
 
-	// Place workers
-	board.PlaceWorker(workerA1, 2, 1)
-	board.PlaceWorker(workerA2, 2, 3)
-	board.PlaceWorker(workerB1, 1, 2)
-	board.PlaceWorker(workerB2, 3, 2)
+	// Place Workers
+	board.PlaceWorker(1, 1, workerTileA1)
+	board.PlaceWorker(1, 2, workerTileA2)
+	board.PlaceWorker(2, 1, workerTileB1)
+	board.PlaceWorker(2, 2, workerTileB2)
 
 	// Initialize RNG Team 1
 	team1 := RandomSelector{
-		Board:   board,
-		Workers: []*santorini.Worker{workerA1, workerA2},
+		Team:  1,
+		Board: board,
 	}
 
 	// Initialize Team 2
 	team2 := RandomSelector{
-		Board:   board,
-		Workers: []*santorini.Worker{workerB1, workerB2},
+		Team:  2,
+		Board: board,
 	}
 
 	// REPL
@@ -66,10 +67,8 @@ func main() {
 				panic(err)
 			}
 			fmt.Printf("Information for Tile %d,%d:\n", x, y)
-			tile := board.GetTile(uint8(x), uint8(y))
-			if tile.Worker != nil {
-				fmt.Printf("\tWorker %d: Team %d ", tile.Worker.Number, tile.Worker.Team)
-			}
+			tile := board.GetTile(int(x), int(y))
+			fmt.Printf("%+v\n", tile)
 		}
 
 		// Team 1 Move
@@ -79,17 +78,21 @@ func main() {
 			break
 		}
 
-		board.PlayTurn(*turn1)
+		turn1Data, _ := json.Marshal(turn1)
+		fmt.Printf("Turn JSON: %s\n", turn1Data)
 		fmt.Printf("Team 1 moves %sWorker %d%s to %d,%d and builds %d,%d\n",
-			color.GetWorkerColor(turn1.Worker.Team, turn1.Worker.Number),
-			turn1.Worker.Number,
+			color.GetWorkerColor(turn1.Team, turn1.Worker),
+			turn1.Worker,
 			color.Reset,
 			turn1.MoveTo.GetX(),
 			turn1.MoveTo.GetY(),
 			turn1.Build.GetX(),
-			turn1.Build.GetX(),
+			turn1.Build.GetY(),
 		)
+		board.PlayTurn(*turn1)
 		fmt.Printf("\n%s\n\n", board)
+		data, _ := json.Marshal(board)
+		fmt.Printf("DEBUG\n\n%s\n\n", string(data))
 
 		// Team 2 Move
 		turn2 := team2.SelectTurn()
@@ -97,16 +100,20 @@ func main() {
 			fmt.Printf("Team 1 Wins! Team 2 has no remaining moves\n")
 			break
 		}
-		board.PlayTurn(*turn2)
+		turn2Data, _ := json.Marshal(turn2)
+		fmt.Printf("Turn JSON: %s\n", turn2Data)
 		fmt.Printf("Team 2 moves %sWorker %d%s to %d,%d and builds %d,%d\n",
-			color.GetWorkerColor(turn2.Worker.Team, turn2.Worker.Number),
-			turn2.Worker.Number,
+			color.GetWorkerColor(turn2.Team, turn2.Worker),
+			turn2.Worker,
 			color.Reset,
 			turn2.MoveTo.GetX(),
 			turn2.MoveTo.GetY(),
 			turn2.Build.GetX(),
-			turn2.Build.GetX(),
+			turn2.Build.GetY(),
 		)
+		board.PlayTurn(*turn2)
 		fmt.Printf("\n%s\n\n", board)
+		data, _ = json.Marshal(board)
+		fmt.Printf("DEBUG\n\n%s\n\n", string(data))
 	}
 }

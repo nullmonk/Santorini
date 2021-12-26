@@ -36,5 +36,8 @@ func GetWorkerColor(team, number int) string {
 	if team == 2 && number == 1 {
 		return Red
 	}
-	return Yellow
+	if team == 2 && number == 2 {
+		return Yellow
+	}
+	return White
 }

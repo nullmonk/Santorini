@@ -1,32 +1,43 @@
 package santorini
 
-type Tile struct {
-	Height int     // 0 no building, 4 capped
-	Worker *Worker `json:",omitempty"`
+import "encoding/json"
 
-	x uint8
-	y uint8
+type Tile struct {
+	team   int // 0 no team, otherwise team number
+	worker int // 0 no worker, otherwise a worker is present
+	height int // 0 no building, 4 capped
+	x      int // x position of the tile
+	y      int // y position of the tile
+}
+
+func (t Tile) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Team   int `json:"team"`
+		Worker int `json:"worker"`
+		Height int `json:"height"`
+		X      int `json:"x"`
+		Y      int `json:"y"`
+	}{
+		t.team, t.worker, t.height, t.x, t.y,
+	})
 }
 
 func (t Tile) IsOccupied() bool {
-	return t.Worker != nil
+	return t.team != 0 || t.worker != 0
 }
-func (t Tile) IsOccupiedBy(worker Worker) bool {
-	if t.Worker == nil {
-		return false
-	}
 
-	return t.Worker.Team == worker.Team && t.Worker.Number == worker.Number
+func (t Tile) IsOccupiedBy(team, worker int) bool {
+	return t.team == team && t.worker == worker
 }
 
 func (t Tile) IsCapped() bool {
-	return t.Height > 3
+	return t.height > 3
 }
 
-func (t Tile) GetX() uint8 {
+func (t Tile) GetX() int {
 	return t.x
 }
 
-func (t Tile) GetY() uint8 {
+func (t Tile) GetY() int {
 	return t.y
 }
