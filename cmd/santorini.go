@@ -89,7 +89,10 @@ func main() {
 			turn1.Build.GetX(),
 			turn1.Build.GetY(),
 		)
-		board.PlayTurn(*turn1)
+		if board.PlayTurn(*turn1) {
+			fmt.Printf("Team 1 Wins!")
+			break
+		}
 		fmt.Printf("\n%s\n\n", board)
 		data, _ := json.Marshal(board)
 		fmt.Printf("DEBUG\n\n%s\n\n", string(data))
@@ -111,7 +114,10 @@ func main() {
 			turn2.Build.GetX(),
 			turn2.Build.GetY(),
 		)
-		board.PlayTurn(*turn2)
+		if board.PlayTurn(*turn2) {
+			fmt.Printf("Team 2 Wins!")
+			break
+		}
 		fmt.Printf("\n%s\n\n", board)
 		data, _ = json.Marshal(board)
 		fmt.Printf("DEBUG\n\n%s\n\n", string(data))
