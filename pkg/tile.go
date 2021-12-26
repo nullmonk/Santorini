@@ -41,3 +41,15 @@ func (t Tile) GetX() int {
 func (t Tile) GetY() int {
 	return t.y
 }
+
+func (t Tile) GetTeam() int {
+	return t.team
+}
+
+func (t Tile) GetWorker() int {
+	return t.worker
+}
+
+func (t Tile) GetHeight() int {
+	return t.height
+}
