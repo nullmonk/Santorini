@@ -2,11 +2,17 @@ package santorini
 
 import "fmt"
 
+// Turn stores a desired state change for the team
 type Turn struct {
 	Team   int
 	Worker int
 	MoveTo Tile
 	Build  Tile
+}
+
+// IsVictory returns true if the turn would result in a victory
+func (t Turn) IsVictory() bool {
+	return t.MoveTo.height == 3
 }
 
 // getWorkerTile locates a particular worker's tile

@@ -22,6 +22,13 @@ func (r RandomSelector) SelectTurn() *santorini.Turn {
 		return &candidates[0]
 	}
 
+	// Check for winning turn
+	for _, candidate := range candidates {
+		if candidate.IsVictory() {
+			return &candidate
+		}
+	}
+
 	n, err := rand.Int(rand.Reader, big.NewInt(int64(len(candidates)-1)))
 	if err != nil {
 		panic(err)
