@@ -39,11 +39,19 @@ func (bot KyleBot) SelectTurn() *santorini.Turn {
 			} else if worker1.GetHeight() < candidate.MoveTo.GetHeight() {
 				weight -= 10
 			}
+
+			if candidate.Build.GetHeight() > worker1.GetHeight()+1 {
+				weight -= 30
+			}
 		} else if candidate.Worker == 2 {
 			if worker2.GetHeight() < candidate.MoveTo.GetHeight() {
 				weight += 20
 			} else if worker2.GetHeight() < candidate.MoveTo.GetHeight() {
 				weight -= 20
+			}
+
+			if candidate.Build.GetHeight() > worker1.GetHeight()+1 {
+				weight -= 30
 			}
 		}
 
