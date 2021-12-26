@@ -23,11 +23,6 @@ func NewKyleBot(team int, board *santorini.Board) KyleBot {
 }
 
 func (bot KyleBot) SelectTurn() *santorini.Turn {
-	// worker1 := bot.Board.GetWorkerTile(bot.Team, 1)
-	// worker2 := bot.Board.GetWorkerTile(bot.Team, 2)
-	// enemyWorker1 := bot.Board.GetWorkerTile(bot.EnemyTeam, 1)
-	// enemyWorker2 := bot.Board.GetWorkerTile(bot.EnemyTeam, 2)
-
 	candidates := bot.Board.GetValidTurns(bot.Team)
 	if candidates == nil {
 		return nil
@@ -59,54 +54,37 @@ func (bot KyleBot) SelectTurn() *santorini.Turn {
 		// Initialize Weight
 		weight := 0
 
-		// Weight based on move height
-		// weight += 10 * candidate.MoveTo.GetHeight()
+		// Prefer to move up
+		weight += candidate.MoveTo.GetHeight() * 10
 
-		// Weight based on build height
-		// if !bot.hasNearbyEnemyWorker(bot.Board.GetSurroundingTiles(candidate.Build.GetX(), candidate.Build.GetY())...) {
-		// 	weight += 10 * (candidate.Build.GetHeight() + 1)
-		// } else {
-		// 	weight -= 50 * (candidate.Build.GetHeight() + 1)
-		// }
+		// Prefer to build high if no enemies are near
+		if !bot.hasNearbyEnemyWorker(candidate.Build) {
+			weight += (candidate.Build.GetHeight() + 1) * 10
+		}
 
-		// Avoid building near enemy workers
-		// var enemyReach []santorini.Tile
-		// enemyMovement := append(
-		// 	bot.Board.GetSurroundingTiles(enemyWorker1.GetX(), enemyWorker1.GetY()),
-		// 	bot.Board.GetSurroundingTiles(enemyWorker2.GetX(), enemyWorker2.GetY())...,
-		// )
-		// for _, tile := range enemyMovement {
-		// 	if candidate.Build.GetX() == tile.GetX() || candidate.Build.GetY() == tile.GetY() {
-		// 		weight -= 10
-		// 	}
-		// 	enemyReach = append(enemyReach, bot.Board.GetSurroundingTiles(tile.GetX(), tile.GetY())...)
-		// }
-		// for _, tile := range enemyReach {
-		// 	if candidate.Build.GetX() == tile.GetX() || candidate.Build.GetY() == tile.GetY() {
-		// 		weight -= 5
-		// 	}
-		// }
-
-		// Prefer building on edge tiles
-		// if candidate.Build.GetX() == 0 ||
-		// 	candidate.Build.GetX() == bot.Board.Size-1 ||
-		// 	candidate.Build.GetY() == 0 ||
-		// 	candidate.Build.GetY() == bot.Board.Size-1 {
-		// 	weight += 10
-		// }
-
-		// Avoid moves that enable an enemy win next turn
+		// Ponder the moves to come
 		thoughtBoard := bot.copyBoard()
 		thoughtBoard.PlayTurn(candidate)
+
+		// Prefer moves that enable us to win next turn
+		futureCandidates := thoughtBoard.GetValidTurns(bot.Team)
+		for _, futureCandidate := range futureCandidates {
+			if futureCandidate.IsVictory() {
+				weight += 1000
+			}
+		}
+
+		// Avoid moves that enable an enemy win next turn
 		futureEnemyCandidates := thoughtBoard.GetValidTurns(bot.EnemyTeam)
-		for _, enemyCandidate := range futureEnemyCandidates {
-			if enemyCandidate.IsVictory() {
-				weight -= 10000
+		for _, futureEnemyCandidate := range futureEnemyCandidates {
+			if futureEnemyCandidate.IsVictory() {
+				weight -= 100000
 				break
 			}
 		}
 
 		if weight > maxWeight {
+			maxWeight = weight
 			bestIndex = index
 		}
 	}
@@ -127,8 +105,9 @@ func (bot KyleBot) copyBoard() santorini.Board {
 	}
 }
 
-func (bot KyleBot) hasNearbyEnemyWorker(tiles ...santorini.Tile) bool {
-	for _, tile := range tiles {
+func (bot KyleBot) hasNearbyEnemyWorker(tile santorini.Tile) bool {
+	surroundingTiles := bot.Board.GetSurroundingTiles(tile.GetX(), tile.GetY())
+	for _, tile := range surroundingTiles {
 		if tile.GetTeam() == bot.EnemyTeam {
 			return true
 		}
