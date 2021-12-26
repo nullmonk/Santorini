@@ -15,8 +15,8 @@ func (t Turn) IsVictory() bool {
 	return t.MoveTo.height == 3
 }
 
-// getWorkerTile locates a particular worker's tile
-func (board *Board) getWorkerTile(team, worker int) Tile {
+// GetWorkerTile locates a particular worker's tile
+func (board *Board) GetWorkerTile(team, worker int) Tile {
 	for y := 0; y < board.Size; y++ {
 		for x := 0; x < board.Size; x++ {
 			tile := board.GetTile(x, y)
@@ -28,8 +28,8 @@ func (board *Board) getWorkerTile(team, worker int) Tile {
 	panic(fmt.Errorf("failed to locate team %d worker %d", team, worker))
 }
 
-// getWorkerTile locates all tiles that the provided team has workers on
-func (board *Board) getWorkerTiles(team int) (tiles []Tile) {
+// GetWorkerTile locates all tiles that the provided team has workers on
+func (board *Board) GetWorkerTiles(team int) (tiles []Tile) {
 	for y := 0; y < board.Size; y++ {
 		for x := 0; x < board.Size; x++ {
 			tile := board.GetTile(x, y)
@@ -46,7 +46,7 @@ func (board *Board) getWorkerTiles(team int) (tiles []Tile) {
 
 func (board *Board) GetValidTurns(team int) (turns []Turn) {
 	// Get worker tiles
-	workerTiles := board.getWorkerTiles(team)
+	workerTiles := board.GetWorkerTiles(team)
 
 	// Check moves for each worker
 	for _, workerTile := range workerTiles {
@@ -60,8 +60,8 @@ func (board *Board) GetValidTurns(team int) (turns []Turn) {
 				turns = append(turns, Turn{
 					Team:   team,
 					Worker: workerTile.worker,
-					MoveTo: move,
-					Build:  build,
+					MoveTo: board.GetTile(move.x, move.y),
+					Build:  board.GetTile(build.x, build.y),
 				})
 			}
 		}
