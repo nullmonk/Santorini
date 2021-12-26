@@ -93,12 +93,8 @@ func main() {
 				Board:     board,
 			}
 		*/
-		team2 := bots.NewBasicBot(2, board)
-		team1 := bots.KyleBot{
-			Team:      1,
-			EnemyTeam: 2,
-			Board:     board,
-		}
+		team1 := bots.NewBasicBot(1, board)
+		team2 := bots.NewKyleBot(2, board)
 
 		// Initialize Simulation
 		sim := &Simulation{
