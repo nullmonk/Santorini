@@ -77,7 +77,12 @@ func main() {
 
 		// Team 1 Move
 		turn1 := team1.SelectTurn()
-		board.PlayTurn(turn1)
+		if turn1 == nil {
+			fmt.Printf("Team 2 Wins! Team 1 has no remaining moves")
+			break
+		}
+
+		board.PlayTurn(*turn1)
 		fmt.Printf("Team 1: Moves %d:%d to %d,%d and builds %d,%d\n",
 			turn1.Worker.Team,
 			turn1.Worker.Number,
@@ -90,7 +95,11 @@ func main() {
 
 		// Team 2 Move
 		turn2 := team2.SelectTurn()
-		board.PlayTurn(turn2)
+		if turn2 == nil {
+			fmt.Printf("Team 1 Wins! Team 2 has no remaining moves")
+			break
+		}
+		board.PlayTurn(*turn2)
 		fmt.Printf("Team 2: Moves %d:%d to %d,%d and builds %d,%d\n",
 			turn2.Worker.Team,
 			turn2.Worker.Number,
