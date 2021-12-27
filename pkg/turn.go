@@ -45,6 +45,9 @@ func (board *Board) GetWorkerTiles(team int) (tiles []Tile) {
 }
 
 func (board *Board) GetValidTurns(team int) (turns []Turn) {
+	if team == 0 {
+		return
+	}
 	// Get worker tiles
 	workerTiles := board.GetWorkerTiles(team)
 
@@ -67,5 +70,6 @@ func (board *Board) GetValidTurns(team int) (turns []Turn) {
 		}
 	}
 
+	board.Teams[team] = len(turns) != 0
 	return
 }

@@ -12,9 +12,9 @@ type Tile struct {
 
 func (t Tile) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Team   int `json:"team"`
-		Worker int `json:"worker"`
-		Height int `json:"height"`
+		Team   int `json:"team,omitempty"`
+		Worker int `json:"worker,omitempty"`
+		Height int `json:"height,omitempty"`
 		X      int `json:"x"`
 		Y      int `json:"y"`
 	}{

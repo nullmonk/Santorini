@@ -2,6 +2,8 @@ package bots
 
 import (
 	santorini "santorini/pkg"
+
+	"github.com/sirupsen/logrus"
 )
 
 const maxDepth = 1
@@ -12,12 +14,12 @@ type KyleBot struct {
 	Board     *santorini.Board
 }
 
-func NewKyleBot(team int, board *santorini.Board) KyleBot {
+func NewKyleBot(team int, board *santorini.Board, logger *logrus.Logger) santorini.TurnSelector {
 	enemy := 2
 	if team == 2 {
 		enemy = 1
 	}
-	return KyleBot{
+	return &KyleBot{
 		Team:      team,
 		EnemyTeam: enemy,
 		Board:     board,
@@ -65,7 +67,11 @@ func (bot KyleBot) SelectTurn() *santorini.Turn {
 }
 
 func (bot KyleBot) Name() string {
-	return "Kyle Bot"
+	return "KyleBot"
+}
+
+func (bot KyleBot) IsDeterministic() bool {
+	return true
 }
 
 func (bot KyleBot) copyBoard() santorini.Board {
@@ -74,6 +80,10 @@ func (bot KyleBot) copyBoard() santorini.Board {
 	return santorini.Board{
 		Size:  bot.Board.Size,
 		Tiles: tiles,
+		Teams: map[int]bool{
+			bot.Team:      true,
+			bot.EnemyTeam: true,
+		},
 	}
 }
 
