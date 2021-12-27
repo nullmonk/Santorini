@@ -230,7 +230,9 @@ func (bb *BasicBot) escapeTraps() *santorini.Turn {
 	for _, tile := range bb.Workers {
 		if len(bb.Board.GetMoveableTiles(tile)) == 1 {
 			bb.logger.Printf("Worker %d is trapped, escaping", tile.GetWorker())
-			return &bb.turnsByWorker[tile.GetWorker()][0]
+			if len(bb.turnsByWorker[tile.GetWorker()]) > 0 {
+				return &bb.turnsByWorker[tile.GetWorker()][0]
+			}
 		} else if len(bb.Board.GetMoveableTiles(tile)) == 0 {
 			bb.logger.Printf("Worker %d is trapped!! %v %v", tile.GetWorker(), bb.Board.GetMoveableTiles(tile), len(bb.turnsByWorker[tile.GetWorker()]))
 		}
