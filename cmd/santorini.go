@@ -9,6 +9,8 @@ import (
 	"santorini/pkg/color"
 	"strconv"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 type TurnSelector interface {
@@ -19,23 +21,18 @@ func main() {
 	// Initialize a new board
 	board := santorini.NewBoard()
 
-	// Select Worker Tiles
-	workerTileA1 := board.GetTile(2, 1)
-	workerTileA2 := board.GetTile(2, 3)
-	workerTileB1 := board.GetTile(1, 2)
-	workerTileB2 := board.GetTile(3, 2)
-
 	// Place Workers
-	board.PlaceWorker(1, 1, workerTileA1)
-	board.PlaceWorker(1, 2, workerTileA2)
-	board.PlaceWorker(2, 1, workerTileB1)
-	board.PlaceWorker(2, 2, workerTileB2)
+	board.PlaceWorker(1, 1, 2, 1)
+	board.PlaceWorker(1, 2, 2, 3)
+	board.PlaceWorker(2, 1, 1, 2)
+	board.PlaceWorker(2, 2, 3, 2)
 
 	// Initialize RNG Team 1
-	team1 := bots.NewBasicBot(1, board)
+	team1 := bots.NewBasicBot(1, board, logrus.StandardLogger())
 	// Initialize Team 2
-	team2 := bots.NewKyleBot(2, board)
-	fmt.Println("Team 1 - BasicBot")
+	team2 := bots.NewPlayerBot(2, board, logrus.StandardLogger())
+
+	fmt.Println("Team 1 -", team1.Name())
 	fmt.Printf("%sTeam 1 - Worker 1%s\n", color.GetWorkerColor(1, 1), color.Reset)
 	fmt.Printf("%sTeam 1 - Worker 2%s\n", color.GetWorkerColor(1, 2), color.Reset)
 	fmt.Printf("%sTeam 2 - Worker 1%s\n", color.GetWorkerColor(2, 1), color.Reset)
