@@ -18,6 +18,11 @@ type TurnSelector interface {
 }
 
 func main() {
+	game := santorini.NewGame(bots.NewRandomBot, bots.NewRandomBot)
+	game.Run()
+
+}
+func main2() {
 	// Initialize a new board
 	board := santorini.NewBoard()
 
