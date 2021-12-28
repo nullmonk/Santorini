@@ -52,6 +52,7 @@ func NewBoard(options ...func(*Board)) *Board {
 }
 
 func (board Board) GetTiles() (tiles []Tile) {
+	tiles = make([]Tile, len(board.Tiles))
 	copy(tiles, board.Tiles)
 	return
 }

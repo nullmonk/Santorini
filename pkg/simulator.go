@@ -31,7 +31,7 @@ type Simulation struct {
 }
 
 func NewSimulator(number int, logger *logrus.Logger, bots ...BotInitializer) *Simulation {
-	b := defaultPosition(len(bots))
+	b := DefaultPosition(len(bots))
 	lgr := logger
 	// Unless we are debugging, hide all bot logs except for fatal ones
 	if logger.Level != logrus.DebugLevel {
@@ -115,7 +115,7 @@ func (sim *Simulation) Run() {
 }
 
 // Default starting position for bots
-func defaultPosition(numTeams int) *Board {
+func DefaultPosition(numTeams int) *Board {
 	board := NewBoard()
 
 	workers := make([][]int, 0, numTeams)

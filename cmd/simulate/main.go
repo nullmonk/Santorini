@@ -81,7 +81,7 @@ func main() {
 	}
 
 	opts := &options{
-		threadCount: 1,
+		threadCount: 10,
 		simCount:    1000,
 	}
 

@@ -7,6 +7,7 @@ import (
 	"santorini/bots"
 	santorini "santorini/pkg"
 	"santorini/pkg/color"
+	"santorini/ui"
 	"strconv"
 	"strings"
 
@@ -18,7 +19,7 @@ type TurnSelector interface {
 }
 
 func main() {
-	game := santorini.NewGame(bots.NewRandomBot, bots.NewRandomBot)
+	game := ui.NewGame(bots.NewRandomBot, bots.NewRandomBot, bots.NewRandomBot)
 	game.Run()
 
 }
