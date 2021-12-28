@@ -1,6 +1,10 @@
 package ui
 
-import "github.com/gen64/go-tui"
+import (
+	"strings"
+
+	"github.com/gen64/go-tui"
+)
 
 type PromptWidget struct {
 	pane *tui.TUIPane
@@ -20,12 +24,17 @@ func NewPromptWidget(pane *tui.TUIPane) *PromptWidget {
 }
 
 func (p *PromptWidget) update(pane *tui.TUIPane) int {
-	printToPane(1, 0, pane, p.msg)
+	if pane != nil && pane.GetWidth() > 0 {
+		printToPane(1, 0, pane, p.msg)
+	}
 	return 1
 }
 
 func (p *PromptWidget) Set(text string) {
 	p.msg = text
+	if strings.TrimSpace(text) != "" {
+		p.pane.Iterate()
+	}
 }
 
 func (p *PromptWidget) Iterate() {

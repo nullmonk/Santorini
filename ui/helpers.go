@@ -28,6 +28,9 @@ func writeLine(x, y int, p *tui.TUIPane, line string) {
 }
 
 func wordWrap(text string, lineWidth int, suffix ...string) []string {
+	if strings.TrimSpace(text) == "" {
+		return []string{}
+	}
 	rows := make([]string, 0, 2)
 	suf := ""
 	if len(suffix) > 0 {

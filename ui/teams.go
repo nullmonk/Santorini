@@ -57,8 +57,10 @@ func (t *TeamWidget) update(p *tui.TUIPane) int {
 	y := 0
 	for i, team := range t.teams {
 		isturn := ""
-		if len(t.board.Moves)%len(t.teams) == i {
+		if t.board.Victor == 0 && len(t.board.Moves)%len(t.teams) == i {
 			isturn = " *"
+		} else if t.board.Victor == i+1 {
+			isturn = " ***"
 		}
 		writeLine(1, y, p, team.name+isturn)
 		y++
