@@ -60,5 +60,7 @@ func (i *InputWidget) WaitForInput() string {
 	for i.lastInput == "" {
 		continue
 	}
-	return i.lastInput
+	ret := i.lastInput
+	i.lastInput = ""
+	return ret
 }

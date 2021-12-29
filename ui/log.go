@@ -29,7 +29,6 @@ func NewLogWidget(pane *tui.TUIPane) *LogWidget {
 }
 func (l *LogWidget) Printf(format string, a ...interface{}) {
 	ln := strings.TrimSpace(fmt.Sprintf(format, a...))
-
 	// Word wrap the line so it fits in the gamebox
 	lns := wordWrap(ln, l.pane.GetWidth()-2, "↵")
 	if len(ln) > 0 {

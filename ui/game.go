@@ -12,6 +12,9 @@ type Game struct {
 	Board       *santorini.Board
 	turnCounter int // the turn in the game it is Round = turnCounter/len(Teams)
 	Teams       []santorini.TurnSelector
+	Humans      []*Player // The human players
+
+	waitingForPrompt func(prompt string)
 
 	widgets struct {
 		Board  *BoardWidget  // Displays the board
@@ -24,15 +27,26 @@ type Game struct {
 	t *tui.TUI
 }
 
-func NewGame(bots ...santorini.BotInitializer) *Game {
+func NewGame(players int, bots ...santorini.BotInitializer) *Game {
 	// Make the panes
 	g := &Game{
-		t:     tui.NewTUI("", "", ""),
-		Board: santorini.DefaultPosition(len(bots)),
-		Teams: make([]santorini.TurnSelector, 0, len(bots)),
+		t:      tui.NewTUI("", "", ""),
+		Board:  santorini.DefaultPosition(len(bots) + players),
+		Teams:  make([]santorini.TurnSelector, 0, len(bots)),
+		Humans: make([]*Player, 0, len(bots)),
 	}
-	for i, bot := range bots {
-		g.Teams = append(g.Teams, bot(i+1, g.Board, logrus.StandardLogger()))
+	for i := 0; i < players; i++ {
+		// Initialize the players
+		player := &Player{
+			game: g,
+			team: i + 1,
+		}
+		g.Humans = append(g.Humans, player)
+		g.Teams = append(g.Teams, player)
+	}
+	for i, botinit := range bots {
+		bot := botinit(players+i+1, g.Board, logrus.StandardLogger())
+		g.Teams = append(g.Teams, bot)
 	}
 	var boardPane, promptPane, teamPane, logPane, inputPane *tui.TUIPane
 
@@ -48,7 +62,6 @@ func NewGame(bots ...santorini.BotInitializer) *Game {
 	g.widgets.Input = NewInputWidget(inputPane)
 	logger = g.widgets.Logs
 	g.widgets.Prompt.Set("Press ↵ to start game")
-
 	g.t.SetOnKeyPress(func(t *tui.TUI, b []byte) {
 		if g.widgets.Input.onKeyPress(t, b) {
 			g.Step()
@@ -59,18 +72,50 @@ func NewGame(bots ...santorini.BotInitializer) *Game {
 
 // Perform the next step in the game
 func (g *Game) Step() {
+	defer func() {
+		// recover from panic if one occured. Set err to nil otherwise.
+		if err := recover(); err != nil {
+			g.Board.IsOver = true
+			g.widgets.Logs.Printf("Game has panicked: %s", err)
+		}
+	}()
+	lastInput := g.widgets.Input.lastInput
+	if g.waitingForPrompt != nil {
+		// If we didnt get a value, loop back
+		if lastInput == "" {
+			return
+		} else {
+			g.waitingForPrompt(lastInput)
+			g.waitingForPrompt = nil
+		}
+	}
+
 	// Figure out whose turn it is next
 	if g.Board.IsOver {
-		if g.widgets.Input.Value() == "exit" {
+		if lastInput == "exit" {
 			os.Exit(0)
 		}
 		return
 	}
 
+	var turn *santorini.Turn
 	botNum := g.turnCounter % len(g.Teams)
-	g.turnCounter += 1
 	bot := g.Teams[botNum]
-	turn := bot.SelectTurn()
+
+	// looks like we have a human player
+	if botNum < len(g.Humans) {
+		player := g.Humans[botNum]
+		if player.isFinished() {
+			turn = player.SelectTurn()
+		} else {
+			player.Hijack()
+			player.resume()
+			return
+		}
+	} else {
+		turn = bot.SelectTurn()
+	}
+	g.turnCounter += 1
 	g.widgets.Logs.LogTurn(bot, *turn)
 	if g.Board.PlayTurn(*turn) {
 		g.widgets.Logs.Printf("Game Over. %s wins in %d turns", bot.Name(), g.turnCounter/len(g.Teams))
