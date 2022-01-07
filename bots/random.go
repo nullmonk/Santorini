@@ -59,8 +59,11 @@ func (r RandomSelector) SelectTurn() *santorini.Turn {
 		return r.testReturn(&candidates[0])
 	}
 
-	// Check for winning turn
-	for _, candidate := range candidates {
+	// Always block a win if possible
+	enemyCandidates := r.Board.GetValidTurns(r.EnemyTeam)
+
+	for index, candidate := range candidates {
+		// Always take a victory turn
 		if candidate.IsVictory() {
 			return r.testReturn(&candidate)
 		}
@@ -76,6 +79,15 @@ func (r RandomSelector) SelectTurn() *santorini.Turn {
 						// This is the move
 						return r.testReturn(&defense)
 					}
+				}
+			}
+		}
+
+		// Always block a win
+		for _, enemyCandidate := range enemyCandidates {
+			if enemyCandidate.IsVictory() {
+				if enemyCandidate.MoveTo.GetX() == candidate.Build.GetX() && enemyCandidate.MoveTo.GetY() == candidate.Build.GetY() {
+					return &candidates[index]
 				}
 			}
 		}
