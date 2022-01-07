@@ -1,10 +1,12 @@
 package bots
 
 import (
-	"log"
+	"fmt"
 	"math"
 	santorini "santorini/pkg"
 	"sort"
+
+	"github.com/sirupsen/logrus"
 )
 
 /* BasicBot is a bot that will perform the following actions:
@@ -19,7 +21,7 @@ type BasicBot struct {
 	EnemyWorkers []santorini.Tile
 	Team         int
 
-	logger log.Logger
+	logger *logrus.Logger
 	turns  []santorini.Turn // Turns for the round, by worker
 
 	chosenWorker  int // the worker we recommend moving
@@ -30,7 +32,15 @@ func (bb *BasicBot) Name() string {
 	return "BasicBot"
 }
 
-func NewBasicBot(team int, board *santorini.Board) *BasicBot {
+func (bb BasicBot) IsDeterministic() bool {
+	return true
+}
+
+func (bb *BasicBot) log(fmtstr string, args ...interface{}) {
+	bb.logger.Debug("BasicBot: ", fmt.Sprintf(fmtstr, args...))
+}
+
+func NewBasicBot(team int, board *santorini.Board, logger *logrus.Logger) santorini.TurnSelector {
 	// Figure out where my workers are, and figure out where the enemy workers are
 	ai := &BasicBot{
 		Board:        board,
@@ -38,7 +48,7 @@ func NewBasicBot(team int, board *santorini.Board) *BasicBot {
 		EnemyWorkers: make([]santorini.Tile, 0, 2),
 		Team:         team,
 
-		logger:        *log.Default(),
+		logger:        logger,
 		turnsByWorker: make(map[int][]santorini.Turn),
 	}
 	return ai
@@ -74,7 +84,7 @@ func (bb *BasicBot) update() {
 func (bb *BasicBot) SelectTurn() *santorini.Turn {
 	bb.update()
 	if winningMoves := GetWinningMoves(bb.turns); len(winningMoves) > 0 {
-		bb.logger.Print("Detected a winning move. Executing it")
+		bb.log("Detected a winning move. Executing it")
 		return &winningMoves[0]
 	}
 
@@ -209,12 +219,12 @@ func (bb *BasicBot) defend() *santorini.Turn {
 	}
 
 	if len(enemyWinningMoves) > len(defendMoves) {
-		bb.logger.Println("Enemy has more winning moves than I can block")
+		bb.log("Enemy has more winning moves than I can block")
 	}
 	// if we need to defend ourselves, do it
 	// TODO: order the defend moves based on how good the move is
 	if len(defendMoves) > 0 {
-		bb.logger.Print("Capping enemy for defense")
+		bb.log("Capping enemy for defense")
 		sort.Slice(defendMoves, func(i, j int) bool {
 			return bb.rankMove(defendMoves[i]) < bb.rankMove(defendMoves[j])
 		})
@@ -229,10 +239,12 @@ func (bb *BasicBot) defend() *santorini.Turn {
 func (bb *BasicBot) escapeTraps() *santorini.Turn {
 	for _, tile := range bb.Workers {
 		if len(bb.Board.GetMoveableTiles(tile)) == 1 {
-			bb.logger.Printf("Worker %d is trapped, escaping", tile.GetWorker())
-			return &bb.turnsByWorker[tile.GetWorker()][0]
+			bb.log("Worker %d is trapped, escaping", tile.GetWorker())
+			if len(bb.turnsByWorker[tile.GetWorker()]) > 0 {
+				return &bb.turnsByWorker[tile.GetWorker()][0]
+			}
 		} else if len(bb.Board.GetMoveableTiles(tile)) == 0 {
-			bb.logger.Printf("Worker %d is trapped!! %v %v", tile.GetWorker(), bb.Board.GetMoveableTiles(tile), len(bb.turnsByWorker[tile.GetWorker()]))
+			bb.log("Worker %d is trapped!! %v %v", tile.GetWorker(), bb.Board.GetMoveableTiles(tile), len(bb.turnsByWorker[tile.GetWorker()]))
 		}
 	}
 	return nil

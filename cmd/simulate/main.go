@@ -1,122 +1,168 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
+	"os"
 	"santorini/bots"
 	santorini "santorini/pkg"
+	"strconv"
+	"sync"
+
+	"github.com/schollz/progressbar/v3"
+	"github.com/sirupsen/logrus"
 )
 
-const MaxSimulations = 10000
+var knownbots = []santorini.BotInitializer{bots.NewBasicBot, bots.NewKyleBot, bots.NewRandomBot}
 
-type TurnSelector interface {
-	SelectTurn() *santorini.Turn
-	Name() string
+func listBots() {
+	for i, b := range knownbots {
+		bot := b(0, &santorini.Board{}, nil)
+		fmt.Printf("%d. %s\n", i, bot.Name())
+	}
 }
 
-type Simulation struct {
-	Number int
-	Board  *santorini.Board
-	Team1  TurnSelector
-	Team2  TurnSelector
-
-	round int
+type options struct {
+	threadCount int `help:"Number of threads to use"`
+	simCount    int
 }
 
-// doRound returns true when a team wins, false otherwise
-func (sim *Simulation) doRound() bool {
-	sim.round += 1
-
-	// Team 1 Select
-	turn1 := sim.Team1.SelectTurn()
-	if turn1 == nil {
-		fmt.Printf("Team 2 (%s) Wins! Team 1 has no remaining moves\n", sim.Team2.Name())
-		return true
-	}
-
-	// Team 1 Play
-	if sim.Board.PlayTurn(*turn1) {
-		fmt.Printf("Team 1 (%s) Wins!\n", sim.Team1.Name())
-		return true
-	}
-
-	// Team 2 Select
-	turn2 := sim.Team2.SelectTurn()
-	if turn2 == nil {
-		fmt.Printf("Team 1 (%s) Wins! Team 2 has no remaining moves\n", sim.Team1.Name())
-		return true
-	}
-
-	// Team 2 Play
-	if sim.Board.PlayTurn(*turn2) {
-		fmt.Printf("Team 2 (%s) Wins!\n", sim.Team2.Name())
-		return true
-	}
-
-	// The game continues...
-	return false
+type overallstats struct {
+	bot1Wins int
+	bot2Wins int
+	// Calculate average round count
+	sumRounds  int
+	loseBoards []*santorini.Board
+	pb         *progressbar.ProgressBar
 }
 
-// Run a game until it's completion
-func (sim *Simulation) Run() {
-	for !sim.doRound() {
-		//log.Printf("Completed Round %d", sim.round)
+func (stats *overallstats) update(sim *santorini.Simulation) {
+	// The first bot can be team 1 or team 2 depending on the round number
+	if sim.Board.Victor == sim.Number%2+1 {
+		stats.bot1Wins++
+	} else {
+		stats.bot2Wins++
+		// Keep track of the losses
+		stats.loseBoards = append(stats.loseBoards, sim.Board)
 	}
-
-	log.Printf("Simulation %d Completed, Team %d won after %d rounds", sim.Number, sim.Board.Victor, sim.round)
-}
-
-func defaultPosition() *santorini.Board {
-	board := santorini.NewBoard()
-
-	// Select Worker Tiles
-	workerTileA1 := board.GetTile(2, 1)
-	workerTileA2 := board.GetTile(2, 3)
-	workerTileB1 := board.GetTile(1, 2)
-	workerTileB2 := board.GetTile(3, 2)
-
-	// Place Workers
-	board.PlaceWorker(1, 1, workerTileA1)
-	board.PlaceWorker(1, 2, workerTileA2)
-	board.PlaceWorker(2, 1, workerTileB1)
-	board.PlaceWorker(2, 2, workerTileB2)
-	return board
+	stats.sumRounds += len(sim.Board.Moves) / 2
+	if stats.pb != nil {
+		stats.pb.Describe(fmt.Sprintf("%03d / %03d", stats.bot1Wins, stats.bot2Wins))
+		stats.pb.Add(1)
+	}
 }
 
 func main() {
-	team1Wins := 0
-	team2Wins := 0
+	if len(os.Args) < 3 {
+		fmt.Println("Chose two bots to simulate. Bots will alternate going first. Deterministic bots will only run 1 game each.")
+		fmt.Printf("USAGE: %s bot1 bot2 [numRounds]\n", os.Args[0])
+		listBots()
+		os.Exit(1)
+	}
 
-	for i := 0; i < MaxSimulations; i++ {
-		board := defaultPosition()
-		// Initialize Simulation
-		sim := &Simulation{
-			Number: i,
-			Team1:  bots.NewRandomBot(1, board),
-			Team2:  bots.NewKyleBot(2, board),
-			Board:  board,
+	var bot1 santorini.BotInitializer
+	var bot2 santorini.BotInitializer
+	for _, b := range knownbots {
+		bot := b(0, &santorini.Board{}, nil)
+		if bot.Name() == os.Args[1] {
+			bot1 = b
 		}
-		sim.Run()
-
-		board = defaultPosition()
-		// Initialize Simulation
-		sim = &Simulation{
-			Number: i,
-			Team1:  bots.NewRandomBot(1, board),
-			Team2:  bots.NewKyleBot(2, board),
-			Board:  board,
-		}
-		sim.Run()
-		//fmt.Printf("Final Board:\n%s\n", board)
-		if board.Victor == 1 {
-			logData, _ := json.Marshal(board.Moves)
-			fmt.Printf("LOSS DATA: %s\n", string(logData))
-			team1Wins += 1
-		} else {
-			team2Wins += 1
+		if bot.Name() == os.Args[2] {
+			bot2 = b
 		}
 	}
 
-	log.Printf("End of %d Simulations, Team 1 won %d and Team 2 won %d", MaxSimulations, team1Wins, team2Wins)
+	if bot1 == nil {
+		fmt.Printf("%s is not a known bot\n", os.Args[1])
+		os.Exit(1)
+	}
+	if bot2 == nil {
+		fmt.Printf("%s is not a known bot\n", os.Args[2])
+		os.Exit(1)
+	}
+
+	opts := &options{
+		threadCount: 10,
+		simCount:    1000,
+	}
+
+	//logrus.SetLevel(logrus.DebugLevel)
+	// Deterministic bots dont need to be run many times (unless explicitly told to)
+	b1 := bot1(0, &santorini.Board{}, nil)
+	b2 := bot2(0, &santorini.Board{}, nil)
+
+	if b1.IsDeterministic() && b2.IsDeterministic() {
+		opts.simCount = 2
+	}
+	if len(os.Args) > 3 {
+		if i, err := strconv.ParseInt(os.Args[3], 10, 64); err == nil {
+			opts.simCount = int(i)
+		} else {
+			fmt.Println("Cannot parse integer", os.Args[3])
+			os.Exit(1)
+		}
+	}
+
+	logrus.Infof("Running %d simulations between %s and %s", opts.simCount, b1.Name(), b2.Name())
+	stats := &overallstats{
+		loseBoards: make([]*santorini.Board, 0, opts.simCount),
+		pb:         progressbar.Default(int64(opts.simCount), "0 / 0"),
+	}
+
+	wg := new(sync.WaitGroup)
+	wg2 := new(sync.WaitGroup)
+	sims := make(chan *santorini.Simulation)
+	completedSims := make(chan *santorini.Simulation)
+
+	logrus.Debugf("Starting %d workers", opts.threadCount)
+	for i := 0; i < opts.threadCount; i++ {
+		wg.Add(1)
+		go runner(wg, sims, completedSims)
+	}
+	wg2.Add(1)
+	go statistician(wg2, completedSims, stats)
+
+	// run all the sim
+	for i := 0; i < opts.simCount; i++ {
+		var sim *santorini.Simulation
+		if i%2 == 0 {
+			sim = santorini.NewSimulator(i, logrus.StandardLogger(), bot1, bot2)
+		} else {
+			sim = santorini.NewSimulator(i, logrus.StandardLogger(), bot2, bot1)
+		}
+		sims <- sim
+	}
+
+	// Wait for all the sims to finish
+	logrus.Debug("Waiting for runners to finish")
+	close(sims)
+	wg.Wait()
+	// Wait for the stats to finish
+	logrus.Debug("Waiting for stats to finish")
+	close(completedSims)
+	wg2.Wait()
+
+	logrus.WithFields(map[string]interface{}{
+		"bot1":             b1.Name(),
+		"bot1_wins":        stats.bot1Wins,
+		"bot2":             b2.Name(),
+		"bot2_wins":        stats.bot2Wins,
+		"avg_round_length": stats.sumRounds / opts.simCount,
+		"num_rounds":       opts.simCount,
+	}).Info("Simulation Complete")
+}
+
+func runner(wg *sync.WaitGroup, sims chan *santorini.Simulation, results chan *santorini.Simulation) {
+	defer wg.Done()
+	defer logrus.Debug("Runner finished")
+	for sim := range sims {
+		sim.Run()
+		results <- sim
+	}
+}
+
+func statistician(wg *sync.WaitGroup, results chan *santorini.Simulation, stats *overallstats) {
+	defer wg.Done()
+	for sim := range results {
+		stats.update(sim)
+	}
 }

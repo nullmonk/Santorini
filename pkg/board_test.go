@@ -26,7 +26,7 @@ func TestNewBoard(t *testing.T) {
 func TestPlayTurn(t *testing.T) {
 	board := NewBoard()
 
-	board.PlaceWorker(1, 1, Tile{x: 1, y: 2})
+	board.PlaceWorker(1, 1, 1, 2)
 
 	tile := board.GetTile(1, 2)
 	assert.Equal(t, 1, tile.x)

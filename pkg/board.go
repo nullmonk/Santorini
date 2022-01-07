@@ -7,6 +7,7 @@ import (
 type Board struct {
 	Size  int
 	Tiles []Tile
+	Teams map[int]bool // true if the player is playing (e.g. not trapped)
 
 	IsOver bool
 	Victor int // Who won the game
@@ -26,7 +27,8 @@ func NewBoard(options ...func(*Board)) *Board {
 	 *  0 0 0 0 0
 	 */
 	board := &Board{
-		Size: 5,
+		Size:  5,
+		Teams: make(map[int]bool),
 	}
 
 	// Apply Options
@@ -50,6 +52,7 @@ func NewBoard(options ...func(*Board)) *Board {
 }
 
 func (board Board) GetTiles() (tiles []Tile) {
+	tiles = make([]Tile, len(board.Tiles))
 	copy(tiles, board.Tiles)
 	return
 }
@@ -162,6 +165,20 @@ func (board Board) GetBuildableTiles(team, worker int, buildTile Tile) (tiles []
 
 // PlayTurn will update the board state with the results of the provided turn, or panic if the turn is illegal
 func (board *Board) PlayTurn(turn Turn) (gameover bool) {
+	// Have workers been trapped
+	teamsInPlay := 0
+	playingTeam := 0
+	for team, playing := range board.Teams {
+		if playing {
+			teamsInPlay++
+			playingTeam = team
+		}
+	}
+	if teamsInPlay < 2 && len(board.Teams) > 1 {
+		board.IsOver = true
+		board.Victor = playingTeam
+		return true
+	}
 	if turn.Team == board.lastTeam {
 		panic(fmt.Errorf("it is not team %d's turn", turn.Team))
 	}
@@ -189,6 +206,7 @@ func (board *Board) PlayTurn(turn Turn) (gameover bool) {
 	board.setTile(dstTile)
 
 	// 3. Check if the game has been won
+	// Has someone capped?
 	if dstTile.height == 3 {
 		board.Victor = turn.Team
 		board.IsOver = true
@@ -208,9 +226,10 @@ func (board *Board) PlayTurn(turn Turn) (gameover bool) {
 }
 
 // PlaceWorker on the board, should be called before any turns are made
-func (board *Board) PlaceWorker(team, worker int, tile Tile) {
-	workerTile := board.GetTile(tile.x, tile.y)
+func (board *Board) PlaceWorker(team, worker, x, y int) {
+	workerTile := board.GetTile(x, y)
 	workerTile.team = team
 	workerTile.worker = worker
 	board.setTile(workerTile)
+	board.Teams[team] = true
 }

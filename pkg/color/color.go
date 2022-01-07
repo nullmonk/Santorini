@@ -31,13 +31,19 @@ func GetWorkerColor(team, number int) string {
 		return Blue
 	}
 	if team == 1 && number == 2 {
-		return Green
+		return Cyan
 	}
 	if team == 2 && number == 1 {
 		return Red
 	}
 	if team == 2 && number == 2 {
 		return Yellow
+	}
+	if team == 3 && number == 1 {
+		return Purple
+	}
+	if team == 3 && number == 2 {
+		return Green
 	}
 	return White
 }
