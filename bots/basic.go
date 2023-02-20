@@ -2,7 +2,6 @@ package bots
 
 import (
 	"fmt"
-	"math"
 	santorini "santorini/pkg"
 	"sort"
 
@@ -248,10 +247,4 @@ func (bb *BasicBot) escapeTraps() *santorini.Turn {
 		}
 	}
 	return nil
-}
-
-func getDistance(t1, t2 santorini.Tile) int {
-	dx := math.Abs(float64(t1.GetX() - t2.GetX()))
-	dy := math.Abs(float64(t1.GetY() - t2.GetY()))
-	return int(math.Max(dx, dy) - math.Min(dx, dy))
 }

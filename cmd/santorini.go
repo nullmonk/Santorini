@@ -19,7 +19,7 @@ type TurnSelector interface {
 }
 
 func main() {
-	game := ui.NewGame(1, bots.NewRandomBot)
+	game := ui.NewGame(1, bots.NewBasicBot)
 	game.Run()
 
 }
