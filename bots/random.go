@@ -3,6 +3,7 @@ package bots
 import (
 	"crypto/rand"
 	"math/big"
+	"santorini/board"
 	santorini "santorini/pkg"
 
 	"github.com/sirupsen/logrus"
@@ -12,7 +13,7 @@ import (
 type RandomSelector struct {
 	Team       int
 	EnemyTeams []int
-	Board      *santorini.Board
+	Board      board.Board
 }
 
 func NewRandomBot(team int, board *santorini.Board, logger *logrus.Logger) santorini.TurnSelector {
