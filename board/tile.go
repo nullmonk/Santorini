@@ -12,7 +12,7 @@ type Tile struct {
 	y      uint8 // y position of the tile
 }
 
-func (t Tile) MarshalJSON() ([]byte, error) {
+func (t *Tile) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Team   uint8 `json:"team,omitempty"`
 		Height uint8 `json:"height,omitempty"`
@@ -39,36 +39,40 @@ func (t *Tile) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-func (t Tile) IsCapped() bool {
+func (t *Tile) IsCapped() bool {
 	return t.height > 3
 }
 
-func (t Tile) IsOccupied() bool {
+func (t *Tile) IsOccupied() bool {
 	return t.height > 3 || t.team > 0
 }
 
-func (t Tile) GetX() uint8 {
+func (t *Tile) GetX() uint8 {
 	return t.x
 }
 
-func (t Tile) GetY() uint8 {
+func (t *Tile) GetY() uint8 {
 	return t.y
 }
 
-func (t Tile) GetTeam() uint8 {
+func (t *Tile) GetTeam() uint8 {
 	return t.team
 }
 
-func (t Tile) GetHeight() uint8 {
+func (t *Tile) GetHeight() uint8 {
 	return t.height
 }
 
-func (t Tile) Same(t2 Tile) bool {
+func (t *Tile) SameLocation(t2 *Tile) bool {
 	return t.x == t2.x && t.y == t2.y
 }
 
+func (t *Tile) Equal(o *Tile) bool {
+	return t.x == o.x && t.y == o.y && t.team == o.team && t.height == o.height
+}
+
 // CanMoveTo says if t is able to move to t2
-func (t Tile) CanMoveTo(t2 Tile) error {
+func (t *Tile) CanMoveTo(t2 *Tile) error {
 	dist := getDistance(t, t2)
 	// cant move to same spot or a far distance
 	if dist == 0 || dist >= 2 {

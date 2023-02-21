@@ -40,30 +40,32 @@ func TestTileIsCapped(t *testing.T) {
 
 func TestTileMovement(t *testing.T) {
 	// Worker normal: Move down
-	assert.Equal(t, nil, Tile{1, 0, 2, 1}.CanMoveTo(Tile{0, 0, 2, 2}))
+	tt := &Tile{1, 0, 2, 1}
+	assert.Nil(t, tt.CanMoveTo(&Tile{0, 0, 2, 2}))
 
 	// Worker cannot move where another worker is
 	assert.EqualError(t,
-		Tile{1, 0, 2, 1}.CanMoveTo(Tile{2, 0, 2, 2}),
+		tt.CanMoveTo(&Tile{2, 0, 2, 2}),
 		"the worker cannot move to an occupied block",
 		"the worker cannot move to where another worker is",
 	)
 	assert.EqualError(t,
-		Tile{1, 0, 2, 1}.CanMoveTo(Tile{0, 2, 2, 2}),
+		tt.CanMoveTo(&Tile{0, 2, 2, 2}),
 		"the worker cannot jump 2 blocks",
 	)
+	tt.height = 3
 	assert.Equal(t, nil,
-		Tile{1, 3, 2, 1}.CanMoveTo(Tile{0, 0, 2, 2}),
+		tt.CanMoveTo(&Tile{0, 0, 2, 2}),
 		"the worker CAN jump down",
 	)
 
 	assert.EqualError(t,
-		Tile{1, 3, 2, 1}.CanMoveTo(Tile{0, 4, 2, 2}),
+		tt.CanMoveTo(&Tile{0, 4, 2, 2}),
 		"the worker cannot move to an occupied block",
 		"the worker cannot move to a capped block",
 	)
 	assert.EqualError(t,
-		Tile{1, 0, 0, 0}.CanMoveTo(Tile{0, 1, 0, 0}),
+		tt.CanMoveTo(&Tile{0, 1, 2, 1}),
 		"the worker cannot move to the given block",
 		"the worker cannot move to itself",
 	)
@@ -71,14 +73,14 @@ func TestTileMovement(t *testing.T) {
 	src := Tile{1, 1, 2, 2}
 	for _, dst := range OuterRing {
 		assert.EqualError(t,
-			src.CanMoveTo(Tile{0, 1, dst[0], dst[1]}),
+			src.CanMoveTo(&Tile{0, 1, dst[0], dst[1]}),
 			"the worker cannot move to the given block",
 			"Out of range",
 		)
 	}
 	for _, dst := range InnerRing {
 		assert.Equal(t, nil,
-			src.CanMoveTo(Tile{0, 1, dst[0], dst[1]}),
+			src.CanMoveTo(&Tile{0, 1, dst[0], dst[1]}),
 			"The worker should be able to go here",
 		)
 	}

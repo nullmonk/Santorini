@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-type Board struct {
+type DefaultBoard struct {
 	Size  int
 	Tiles []Tile
 	Teams map[int]bool // true if the player is playing (e.g. not trapped)
@@ -16,9 +16,9 @@ type Board struct {
 	lastTeam int
 }
 
-// NewBoard initializes a game with the default board size and two teams
-func NewBoard(options ...func(*Board)) *Board {
-	// Default Board
+// NewDefaultBoard initializes a game with the default board size and two teams
+func NewDefaultBoard(options ...func(*DefaultBoard)) *DefaultBoard {
+	// Default DefaultBoard
 	/*
 	 *  0 0 0 0 0
 	 *  0 0 X 0 0
@@ -26,7 +26,7 @@ func NewBoard(options ...func(*Board)) *Board {
 	 *  0 0 X 0 0
 	 *  0 0 0 0 0
 	 */
-	board := &Board{
+	board := &DefaultBoard{
 		Size:  5,
 		Teams: make(map[int]bool),
 	}
@@ -51,13 +51,13 @@ func NewBoard(options ...func(*Board)) *Board {
 	return board
 }
 
-func (board Board) GetTiles() (tiles []Tile) {
+func (board DefaultBoard) GetTiles() (tiles []Tile) {
 	tiles = make([]Tile, len(board.Tiles))
 	copy(tiles, board.Tiles)
 	return
 }
 
-func (board Board) GetTile(x, y int) (t Tile) {
+func (board DefaultBoard) GetTile(x, y int) (t Tile) {
 	if x >= board.Size {
 		panic(fmt.Errorf("invalid x"))
 	}
@@ -68,7 +68,7 @@ func (board Board) GetTile(x, y int) (t Tile) {
 	return board.Tiles[index]
 }
 
-func (board *Board) setTile(tile Tile) {
+func (board *DefaultBoard) setTile(tile Tile) {
 	if tile.x >= board.Size || tile.x < 0 {
 		panic(fmt.Errorf("invalid x %d", tile.x))
 	}
@@ -80,7 +80,7 @@ func (board *Board) setTile(tile Tile) {
 	board.Tiles[index] = tile
 }
 
-func (board Board) GetSurroundingTiles(x, y int) (tiles []Tile) {
+func (board DefaultBoard) GetSurroundingTiles(x, y int) (tiles []Tile) {
 	// List all surrounding tiles
 	type Position struct {
 		X int
@@ -114,7 +114,7 @@ func (board Board) GetSurroundingTiles(x, y int) (tiles []Tile) {
 }
 
 // GetMoveableTiles returns all tiles that may be moved to from the provided position.
-func (board Board) GetMoveableTiles(curTile Tile) (tiles []Tile) {
+func (board DefaultBoard) GetMoveableTiles(curTile Tile) (tiles []Tile) {
 	candidates := board.GetSurroundingTiles(curTile.x, curTile.y)
 	// Filter invalid tiles
 	for _, candidate := range candidates {
@@ -141,7 +141,7 @@ func (board Board) GetMoveableTiles(curTile Tile) (tiles []Tile) {
 }
 
 // GetBuildableTiles returns all tiles that may be built from the provided position.
-func (board Board) GetBuildableTiles(team, worker int, buildTile Tile) (tiles []Tile) {
+func (board DefaultBoard) GetBuildableTiles(team, worker int, buildTile Tile) (tiles []Tile) {
 	candidates := board.GetSurroundingTiles(buildTile.x, buildTile.y)
 
 	// Filter invalid tiles
@@ -164,7 +164,7 @@ func (board Board) GetBuildableTiles(team, worker int, buildTile Tile) (tiles []
 }
 
 // PlayTurn will update the board state with the results of the provided turn, or panic if the turn is illegal
-func (board *Board) PlayTurn(turn Turn) (gameover bool) {
+func (board *DefaultBoard) PlayTurn(turn Turn) (gameover bool) {
 	// Have workers been trapped
 	teamsInPlay := 0
 	playingTeam := 0
@@ -226,7 +226,7 @@ func (board *Board) PlayTurn(turn Turn) (gameover bool) {
 }
 
 // PlaceWorker on the board, should be called before any turns are made
-func (board *Board) PlaceWorker(team, worker, x, y int) {
+func (board *DefaultBoard) PlaceWorker(team, worker, x, y int) {
 	workerTile := board.GetTile(x, y)
 	workerTile.team = team
 	workerTile.worker = worker

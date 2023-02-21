@@ -3,6 +3,7 @@ package board
 import (
 	"fmt"
 	"math"
+	"strings"
 )
 
 // fastBoard implements the board interface and uses a single array as the storage mechanism
@@ -28,6 +29,14 @@ func NewFastBoard(options ...func(Board)) *FastBoard {
 	return f
 }
 
+func (f *FastBoard) Hash() string {
+	res := new(strings.Builder)
+	for _, i := range f.board {
+		res.WriteByte(i + 65)
+	}
+	return res.String()
+}
+
 func (f *FastBoard) Clone() Board {
 	return &FastBoard{
 		board:     f.board,
@@ -39,7 +48,38 @@ func (f *FastBoard) Clone() Board {
 	}
 }
 
-func (f *FastBoard) PlayTurn(t Turn) (victory bool, err error) {
+// Undo a move
+func (f *FastBoard) UndoTurn(t *Turn) error {
+	// Not many other checks I can do to validate that the game hasnt changed...
+	/*
+		if actual.MoveTo.team != t.Worker.team {
+			return fmt.Errorf("cannot undo, worker is not in expected location")
+		}
+	*/
+
+	// Undo build at the Build position
+	curHeight := f.board[(f.width*t.Build.y)+t.Build.x] & 0x7
+	if curHeight < 1 {
+		return fmt.Errorf("cannot undo, no building at %c%d", rune(t.Build.x+65), t.Build.y)
+	}
+	f.board[(f.width*t.Build.y)+t.Build.x] = curHeight - 1
+
+	// Set the worker back to the original position
+	curHeight = f.board[(f.width*t.Worker.y)+t.Worker.x] & 0x7
+	f.board[(f.width*t.Worker.y)+t.Worker.x] = (t.Worker.team << 3) | curHeight
+
+	// Set the MoveTo to team 0
+	f.board[(f.width*t.MoveTo.y)+t.MoveTo.x] = t.MoveTo.height
+
+	// Validate none of the blocks has changed from the expected
+	want := t.Worker.team<<3 | t.Worker.height
+	have := f.board[(f.width*t.Worker.y)+t.Worker.x]
+	if have != want {
+		return fmt.Errorf("worker block has changed: expected %v, found %v", want, have)
+	}
+	return nil
+}
+func (f *FastBoard) PlayTurn(t *Turn) (victory bool, err error) {
 	whosTurn := f.turnCount%uint(f.teams) + 1
 	// Get the turn values from our board bc we dont trust user input
 	turn := Turn{
@@ -64,10 +104,10 @@ func (f *FastBoard) PlayTurn(t Turn) (victory bool, err error) {
 	}
 
 	// cant build on an occupied spot, UNLESS that spot is where the worker currently is
-	if turn.Build.IsOccupied() && !turn.Build.Same(t.Worker) {
+	if turn.Build.IsOccupied() && !turn.Build.SameLocation(t.Worker) {
 		return false, fmt.Errorf("the worker cannot build on the given block")
 	}
-	if turn.Build.Same(turn.MoveTo) {
+	if turn.Build.SameLocation(turn.MoveTo) {
 		return false, fmt.Errorf("the worker cannot build on the given block")
 	}
 
@@ -95,7 +135,7 @@ func (f *FastBoard) PlayTurn(t Turn) (victory bool, err error) {
 	return false, nil
 }
 
-func (f *FastBoard) GetTile(x, y uint8) Tile {
+func (f *FastBoard) GetTile(x, y uint8) *Tile {
 	if x >= f.width {
 		panic(fmt.Errorf("invalid x"))
 	}
@@ -103,7 +143,7 @@ func (f *FastBoard) GetTile(x, y uint8) Tile {
 		panic(fmt.Errorf("invalid y"))
 	}
 	index := f.board[(f.width*y)+x]
-	return Tile{
+	return &Tile{
 		team:   index >> 3,
 		height: index & 0x7,
 		x:      x,
@@ -135,9 +175,9 @@ func (f *FastBoard) setTile(team, height, x, y uint8) error {
 	return nil
 }
 
-func (f *FastBoard) ValidTurns(team uint8) []Turn {
-	turns := make([]Turn, 0, 8*f.workers)
-	workers := make([]Tile, 0, f.workers)
+func (f *FastBoard) ValidTurns(team uint8) []*Turn {
+	turns := make([]*Turn, 0, 8*f.workers)
+	workers := make([]*Tile, 0, f.workers)
 	// find the workers
 	for i, tile := range f.board {
 		y := uint8(i) / f.width
@@ -146,7 +186,7 @@ func (f *FastBoard) ValidTurns(team uint8) []Turn {
 		if tile>>3 != team {
 			continue
 		}
-		workers = append(workers, Tile{
+		workers = append(workers, &Tile{
 			team,
 			tile & 0x7, // height
 			x,
@@ -165,10 +205,10 @@ func (f *FastBoard) ValidTurns(team uint8) []Turn {
 			builds := f.getSurroundingTiles(move.x, move.y)
 			for _, build := range builds {
 				// cant build on an occupied spot, UNLESS that spot is where the worker currently is
-				if build.IsOccupied() && !build.Same(w) {
+				if build.IsOccupied() && !build.SameLocation(w) {
 					continue
 				}
-				turns = append(turns, Turn{
+				turns = append(turns, &Turn{
 					Worker: w,
 					MoveTo: move,
 					Build:  build,
@@ -179,13 +219,13 @@ func (f *FastBoard) ValidTurns(team uint8) []Turn {
 	return turns
 }
 
-func (f *FastBoard) getSurroundingTiles(x, y uint8) (tiles []Tile) {
+func (f *FastBoard) getSurroundingTiles(x, y uint8) (tiles []*Tile) {
 	// List all surrounding tiles
-	tiles = make([]Tile, 0, 8)
+	tiles = make([]*Tile, 0, 8)
 	if y > 0 {
 		// North
 		index := f.board[(f.width*(y-1))+x]
-		tiles = append(tiles, Tile{
+		tiles = append(tiles, &Tile{
 			team:   index >> 3,
 			height: index & 0x7,
 			x:      x,
@@ -195,7 +235,7 @@ func (f *FastBoard) getSurroundingTiles(x, y uint8) (tiles []Tile) {
 	if y < f.height-1 {
 		// South
 		index := f.board[(f.width*(y+1))+x]
-		tiles = append(tiles, Tile{
+		tiles = append(tiles, &Tile{
 			team:   index >> 3,
 			height: index & 0x7,
 			x:      x,
@@ -205,7 +245,7 @@ func (f *FastBoard) getSurroundingTiles(x, y uint8) (tiles []Tile) {
 	if x > 0 {
 		// West
 		index := f.board[(f.width*(y))+x-1]
-		tiles = append(tiles, Tile{
+		tiles = append(tiles, &Tile{
 			team:   index >> 3,
 			height: index & 0x7,
 			x:      x - 1,
@@ -215,7 +255,7 @@ func (f *FastBoard) getSurroundingTiles(x, y uint8) (tiles []Tile) {
 	if x < f.width-1 {
 		// East
 		index := f.board[(f.width*(y))+x+1]
-		tiles = append(tiles, Tile{
+		tiles = append(tiles, &Tile{
 			team:   index >> 3,
 			height: index & 0x7,
 			x:      x + 1,
@@ -225,7 +265,7 @@ func (f *FastBoard) getSurroundingTiles(x, y uint8) (tiles []Tile) {
 	if y > 0 && x < f.width-1 {
 		// NorthEast
 		index := f.board[(f.width*(y-1))+x+1]
-		tiles = append(tiles, Tile{
+		tiles = append(tiles, &Tile{
 			team:   index >> 3,
 			height: index & 0x7,
 			x:      x + 1,
@@ -235,7 +275,7 @@ func (f *FastBoard) getSurroundingTiles(x, y uint8) (tiles []Tile) {
 	if y > 0 && x > 0 {
 		// NorthWest
 		index := f.board[(f.width*(y-1))+x-1]
-		tiles = append(tiles, Tile{
+		tiles = append(tiles, &Tile{
 			team:   index >> 3,
 			height: index & 0x7,
 			x:      x - 1,
@@ -245,7 +285,7 @@ func (f *FastBoard) getSurroundingTiles(x, y uint8) (tiles []Tile) {
 	if y < f.height-1 && x < f.width-1 {
 		// SouthEast
 		index := f.board[(f.width*(y+1))+x+1]
-		tiles = append(tiles, Tile{
+		tiles = append(tiles, &Tile{
 			team:   index >> 3,
 			height: index & 0x7,
 			x:      x + 1,
@@ -255,7 +295,7 @@ func (f *FastBoard) getSurroundingTiles(x, y uint8) (tiles []Tile) {
 	if y < f.height-1 && x > 0 {
 		// SouthEast
 		index := f.board[(f.width*(y+1))+x-1]
-		tiles = append(tiles, Tile{
+		tiles = append(tiles, &Tile{
 			team:   index >> 3,
 			height: index & 0x7,
 			x:      x - 1,
@@ -265,7 +305,7 @@ func (f *FastBoard) getSurroundingTiles(x, y uint8) (tiles []Tile) {
 	return
 }
 
-func getDistance(t1, t2 Tile) float64 {
+func getDistance(t1, t2 *Tile) float64 {
 	dx := math.Pow(float64(t2.GetX())-float64(t1.GetX()), 2)
 	dy := math.Pow(float64(t2.GetY())-float64(t1.GetY()), 2)
 	return math.Sqrt(dx + dy)

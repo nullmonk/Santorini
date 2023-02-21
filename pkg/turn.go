@@ -16,7 +16,7 @@ func (t Turn) IsVictory() bool {
 }
 
 // GetWorkerTile locates a particular worker's tile
-func (board *Board) GetWorkerTile(team, worker int) Tile {
+func (board *DefaultBoard) GetWorkerTile(team, worker int) Tile {
 	for y := 0; y < board.Size; y++ {
 		for x := 0; x < board.Size; x++ {
 			tile := board.GetTile(x, y)
@@ -29,7 +29,7 @@ func (board *Board) GetWorkerTile(team, worker int) Tile {
 }
 
 // GetWorkerTile locates all tiles that the provided team has workers on
-func (board *Board) GetWorkerTiles(team int) (tiles []Tile) {
+func (board *DefaultBoard) GetWorkerTiles(team int) (tiles []Tile) {
 	for y := 0; y < board.Size; y++ {
 		for x := 0; x < board.Size; x++ {
 			tile := board.GetTile(x, y)
@@ -44,7 +44,7 @@ func (board *Board) GetWorkerTiles(team int) (tiles []Tile) {
 	return
 }
 
-func (board *Board) GetValidTurns(team int) (turns []Turn) {
+func (board *DefaultBoard) GetValidTurns(team int) (turns []Turn) {
 	if team == 0 {
 		return
 	}
