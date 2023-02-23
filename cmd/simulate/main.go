@@ -4,21 +4,22 @@ import (
 	"fmt"
 	"os"
 	"santorini/bots"
-	santorini "santorini/pkg"
+	"santorini/santorini"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/schollz/progressbar/v3"
 	"github.com/sirupsen/logrus"
 )
 
-var knownbots = []santorini.BotInitializer{bots.NewBasicBot, bots.NewKyleBot, bots.NewRandomBot}
-
-func listBots() {
-	for i, b := range knownbots {
-		bot := b(0, &santorini.Board{}, nil)
-		fmt.Printf("%d. %s\n", i, bot.Name())
-	}
+var knownbots = map[string]santorini.BotInitializer{
+	"randombot": bots.NewRandomBot(),
+	"v1bot":     bots.NewV1Bot(),
+	"kylebot":   bots.NewKyleBot,
+	"aubot":     bots.NewAuBot("model2.json", true),
+	"aubot2":    bots.NewAuBot("model2.json", false),
+	"aubot3":    bots.NewAuBot("beastmodel.json", false),
 }
 
 type options struct {
@@ -31,20 +32,20 @@ type overallstats struct {
 	bot2Wins int
 	// Calculate average round count
 	sumRounds  int
-	loseBoards []*santorini.Board
+	loseBoards []santorini.Board
 	pb         *progressbar.ProgressBar
 }
 
 func (stats *overallstats) update(sim *santorini.Simulation) {
 	// The first bot can be team 1 or team 2 depending on the round number
-	if sim.Board.Victor == sim.Number%2+1 {
+	if int(sim.Victor) == sim.Number%2+1 {
 		stats.bot1Wins++
 	} else {
 		stats.bot2Wins++
 		// Keep track of the losses
 		stats.loseBoards = append(stats.loseBoards, sim.Board)
 	}
-	stats.sumRounds += len(sim.Board.Moves) / 2
+	stats.sumRounds += len(sim.Turns) / 2
 	if stats.pb != nil {
 		stats.pb.Describe(fmt.Sprintf("%03d / %03d", stats.bot1Wins, stats.bot2Wins))
 		stats.pb.Add(1)
@@ -55,27 +56,19 @@ func main() {
 	if len(os.Args) < 3 {
 		fmt.Println("Chose two bots to simulate. Bots will alternate going first. Deterministic bots will only run 1 game each.")
 		fmt.Printf("USAGE: %s bot1 bot2 [numRounds]\n", os.Args[0])
-		listBots()
+		for k := range knownbots {
+			fmt.Println("\t" + k)
+		}
 		os.Exit(1)
 	}
 
-	var bot1 santorini.BotInitializer
-	var bot2 santorini.BotInitializer
-	for _, b := range knownbots {
-		bot := b(0, &santorini.Board{}, nil)
-		if bot.Name() == os.Args[1] {
-			bot1 = b
-		}
-		if bot.Name() == os.Args[2] {
-			bot2 = b
-		}
-	}
-
-	if bot1 == nil {
+	bot1, ok := knownbots[strings.ToLower(os.Args[1])]
+	if bot1 == nil || !ok {
 		fmt.Printf("%s is not a known bot\n", os.Args[1])
 		os.Exit(1)
 	}
-	if bot2 == nil {
+	bot2, ok := knownbots[strings.ToLower(os.Args[2])]
+	if bot2 == nil || !ok {
 		fmt.Printf("%s is not a known bot\n", os.Args[2])
 		os.Exit(1)
 	}
@@ -87,8 +80,8 @@ func main() {
 
 	//logrus.SetLevel(logrus.DebugLevel)
 	// Deterministic bots dont need to be run many times (unless explicitly told to)
-	b1 := bot1(0, &santorini.Board{}, nil)
-	b2 := bot2(0, &santorini.Board{}, nil)
+	b1 := bot1(0, santorini.NewFastBoard(santorini.BlankBoard), nil)
+	b2 := bot2(0, santorini.NewFastBoard(santorini.BlankBoard), nil)
 
 	if b1.IsDeterministic() && b2.IsDeterministic() {
 		opts.simCount = 2
@@ -104,7 +97,7 @@ func main() {
 
 	logrus.Infof("Running %d simulations between %s and %s", opts.simCount, b1.Name(), b2.Name())
 	stats := &overallstats{
-		loseBoards: make([]*santorini.Board, 0, opts.simCount),
+		loseBoards: make([]santorini.Board, 0, opts.simCount),
 		pb:         progressbar.Default(int64(opts.simCount), "0 / 0"),
 	}
 

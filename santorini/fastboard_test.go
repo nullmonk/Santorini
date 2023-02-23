@@ -166,3 +166,15 @@ func TestGetMoves(t *testing.T) {
 	assert.Nil(t, f.setTile(2, 0, 1, 1), "placing worker on empty board")
 	assert.Equal(t, 8, len(f.ValidTurns(1)), "Player should only have 8 moves")
 }
+
+func TestStandardBoard(t *testing.T) {
+	f := NewFastBoard(Default2Player)
+	width, height := f.Dimensions()
+	assert.Equal(t, uint8(5), width, "width is invalid")
+	assert.Equal(t, uint8(5), height, "height is invalid")
+	assert.Equal(t, uint8(5), height, "height is invalid")
+	workers := f.GetWorkers(1)
+	assert.Equal(t, 2, len(workers), "team 1 does not have 2 workers")
+	workers = f.GetWorkers(1)
+	assert.Equal(t, 2, len(workers), "team 2 does not have 2 workers")
+}

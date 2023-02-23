@@ -1,15 +1,6 @@
 package bots
 
-import (
-	"fmt"
-	santorini "santorini/pkg"
-	"santorini/pkg/color"
-	"strconv"
-	"strings"
-
-	"github.com/sirupsen/logrus"
-)
-
+/*
 // PlayerBot allows a player to make moves on the game board
 type PlayerBot struct {
 	name   string
@@ -194,3 +185,5 @@ func GetTileDir(src, dst santorini.Tile) string {
 	}
 	return "unkowno"
 }
+
+*/

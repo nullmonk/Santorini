@@ -9,6 +9,7 @@ type Turn struct {
 	Worker Tile
 	MoveTo Tile
 	Build  Tile
+	Rank   int // Used by bots to rank how important this move is
 }
 
 func TurnFromString(team uint8, s string) (*Turn, error) {

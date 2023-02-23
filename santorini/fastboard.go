@@ -10,8 +10,6 @@ import (
 type FastBoard struct {
 	// Last three bits are the tile height, rest is team number
 	board     []uint8
-	teams     uint8 // Number of teams
-	workers   uint8 // num workers per team
 	width     uint8
 	height    uint8
 	turnCount uint // number of turns that have been taken on this board (used to calculate which teams turn it is)
@@ -20,11 +18,9 @@ type FastBoard struct {
 // Create a new Fastboard with the default layout
 func NewFastBoard(options ...func(Board)) *FastBoard {
 	f := &FastBoard{
-		board:   make([]uint8, 25),
-		width:   5,
-		height:  5,
-		workers: 2,
-		teams:   2,
+		board:  make([]uint8, 25),
+		width:  5,
+		height: 5,
 	}
 
 	if len(options) == 0 {
@@ -43,7 +39,7 @@ func (f *FastBoard) Dimensions() (uint8, uint8) {
 }
 
 func (f *FastBoard) Teams() []uint8 {
-	teams := make([]uint8, 0, f.teams)
+	teams := make([]uint8, 0, 2)
 	for _, i := range f.board {
 		teams = append(teams, i>>3)
 	}
@@ -60,14 +56,14 @@ func (f *FastBoard) Hash() string {
 
 /**** Game Flow Functions ****/ //
 func (f *FastBoard) Clone() Board {
-	return &FastBoard{
-		board:     f.board,
+	b := &FastBoard{
+		board:     make([]uint8, len(f.board)),
 		width:     f.width,
 		height:    f.height,
-		workers:   f.workers,
-		teams:     f.teams,
 		turnCount: f.turnCount,
 	}
+	copy(b.board, f.board)
+	return b
 }
 
 // Undo a move
@@ -102,7 +98,6 @@ func (f *FastBoard) UndoTurn(t *Turn) error {
 	return nil
 }
 func (f *FastBoard) PlayTurn(t *Turn) (victory bool, err error) {
-	whosTurn := f.turnCount%uint(f.teams) + 1
 	// Get the turn values from our board bc we dont trust user input
 	turn := Turn{
 		Worker: f.GetTile(t.Worker.x, t.Worker.y),
@@ -112,9 +107,6 @@ func (f *FastBoard) PlayTurn(t *Turn) (victory bool, err error) {
 	// Make sure the worker is good
 	if turn.Worker.team == 0 {
 		return false, fmt.Errorf("no worker at %d,%d", t.Worker.x, t.Worker.y)
-	}
-	if turn.Worker.team != uint8(whosTurn) || turn.Worker.team != t.Worker.team {
-		return false, fmt.Errorf("the worker does not match the team taking the turn")
 	}
 
 	// TODO: Do we force workers to stop checks? i.e. dont let them make a move that would cause them to lose?
@@ -154,6 +146,14 @@ func (f *FastBoard) PlayTurn(t *Turn) (victory bool, err error) {
 	if err := f.setTile(0, turn.Build.height+1, turn.Build.x, turn.Build.y); err != nil {
 		return false, fmt.Errorf("error building at (%d,%d) : %s", turn.Build.x, turn.Build.y, err)
 	}
+
+	for _, b := range f.board {
+		height := b & 0x7
+		team := b >> 3
+		if height == 3 && team != 0 {
+			return true, nil
+		}
+	}
 	return false, nil
 }
 
@@ -174,9 +174,6 @@ func (f *FastBoard) GetTile(x, y uint8) Tile {
 }
 
 func (f *FastBoard) setTile(team, height, x, y uint8) error {
-	if team > f.teams {
-		return fmt.Errorf("invalid team chosen")
-	}
 	if height > 4 {
 		return fmt.Errorf("invalid height chosen")
 	}
@@ -199,7 +196,7 @@ func (f *FastBoard) setTile(team, height, x, y uint8) error {
 
 /**** Bot Functions ****/ //
 func (f *FastBoard) GetWorkers(team uint8) []Tile {
-	workers := make([]Tile, 0, f.workers)
+	workers := make([]Tile, 0, 2)
 	// find the workers
 	for i, tile := range f.board {
 		y := uint8(i) / f.width
@@ -219,7 +216,7 @@ func (f *FastBoard) GetWorkers(team uint8) []Tile {
 }
 
 func (f *FastBoard) ValidTurns(team uint8) []*Turn {
-	turns := make([]*Turn, 0, 8*f.workers)
+	turns := make([]*Turn, 0, 8*2)
 	workers := f.GetWorkers(team)
 	// Get all the valid moves for each worker
 	for _, w := range workers {

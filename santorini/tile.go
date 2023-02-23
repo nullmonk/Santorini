@@ -87,3 +87,8 @@ func (t Tile) CanMoveTo(t2 Tile) error {
 	}
 	return nil
 }
+
+// HeightDiff if >0, the worker need to go up, if <0, the worker will jump down
+func (t Tile) HeightDiff(t2 Tile) int {
+	return int(t2.height) - int(t.height)
+}

@@ -1,7 +1,8 @@
 package bots
 
 import (
-	santorini "santorini/pkg"
+	"fmt"
+	"santorini/santorini"
 
 	"github.com/sirupsen/logrus"
 )
@@ -9,13 +10,13 @@ import (
 const maxDepth = 1
 
 type KyleBot struct {
-	Team      int
-	EnemyTeam int
-	Board     *santorini.Board
+	Team      uint8
+	EnemyTeam uint8
+	Board     santorini.Board
 }
 
-func NewKyleBot(team int, board *santorini.Board, logger *logrus.Logger) santorini.TurnSelector {
-	enemy := 2
+func NewKyleBot(team uint8, board santorini.Board, logger *logrus.Logger) santorini.TurnSelector {
+	enemy := uint8(2)
 	if team == 2 {
 		enemy = 1
 	}
@@ -26,9 +27,10 @@ func NewKyleBot(team int, board *santorini.Board, logger *logrus.Logger) santori
 	}
 }
 
-func (bot KyleBot) SelectTurn() *santorini.Turn {
-	candidates := bot.Board.GetValidTurns(bot.Team)
-	if candidates == nil {
+func (bot KyleBot) SelectTurn(b santorini.Board) *santorini.Turn {
+	bot.Board = b
+	candidates := b.ValidTurns(bot.Team)
+	if len(candidates) == 0 {
 		return nil
 	}
 
@@ -38,19 +40,19 @@ func (bot KyleBot) SelectTurn() *santorini.Turn {
 	)
 
 	// Always block a win if possible
-	enemyCandidates := bot.Board.GetValidTurns(bot.EnemyTeam)
+	enemyCandidates := bot.Board.ValidTurns(bot.EnemyTeam)
 
 	for index, candidate := range candidates {
 		// Always take a victory turn
-		if candidate.IsVictory() {
-			return &candidate
+		if candidate.IsWinningMove() {
+			return candidate
 		}
 
 		// Always block a win
 		for _, enemyCandidate := range enemyCandidates {
-			if enemyCandidate.IsVictory() {
+			if enemyCandidate.IsWinningMove() {
 				if enemyCandidate.MoveTo.GetX() == candidate.Build.GetX() && enemyCandidate.MoveTo.GetY() == candidate.Build.GetY() {
-					return &candidates[index]
+					return candidates[index]
 				}
 			}
 		}
@@ -63,7 +65,10 @@ func (bot KyleBot) SelectTurn() *santorini.Turn {
 		}
 	}
 
-	return &candidates[bestIndex]
+	if bestIndex >= len(candidates) {
+		panic(fmt.Errorf("what do %d %d", bestIndex, len(candidates)))
+	}
+	return candidates[bestIndex]
 }
 
 func (bot KyleBot) Name() string {
@@ -74,32 +79,21 @@ func (bot KyleBot) IsDeterministic() bool {
 	return true
 }
 
-func (bot KyleBot) copyBoard() santorini.Board {
-	tiles := make([]santorini.Tile, len(bot.Board.Tiles))
-	copy(tiles, bot.Board.Tiles)
-	return santorini.Board{
-		Size:  bot.Board.Size,
-		Tiles: tiles,
-		Teams: map[int]bool{
-			bot.Team:      true,
-			bot.EnemyTeam: true,
-		},
-	}
-}
+func (bot KyleBot) GameOver(win bool) {}
 
-func (bot KyleBot) getWeight(candidate santorini.Turn) int {
+func (bot KyleBot) getWeight(candidate *santorini.Turn) int {
 	// Initialize Weight
 	weight := 0
 
 	// Prefer to move up
-	weight += candidate.MoveTo.GetHeight() * 20
+	weight += int(candidate.MoveTo.GetHeight()) * 20
 
 	// Prefer to cover the most tiles
 	weight += len(bot.Board.GetSurroundingTiles(candidate.MoveTo.GetX(), candidate.MoveTo.GetY()))
 
 	// Prefer to build high if no enemies are near
-	if !bot.hasNearbyEnemyWorker(candidate.Team, candidate.Build) {
-		weight += (candidate.Build.GetHeight() + 1) * 10
+	if !bot.hasNearbyEnemyWorker(candidate.Worker.GetTeam(), candidate.Build) {
+		weight += int(candidate.Build.GetHeight()+1) * 10
 	}
 
 	// Don't build what you cannot reach
@@ -108,21 +102,21 @@ func (bot KyleBot) getWeight(candidate santorini.Turn) int {
 	}
 
 	// Ponder the moves to come
-	thoughtBoard := bot.copyBoard()
+	thoughtBoard := bot.Board.Clone()
 	thoughtBoard.PlayTurn(candidate)
 
 	// Prefer moves that enable us to win next turn
-	futureCandidates := thoughtBoard.GetValidTurns(bot.Team)
+	futureCandidates := thoughtBoard.ValidTurns(bot.Team)
 	for _, futureCandidate := range futureCandidates {
-		if futureCandidate.IsVictory() {
+		if futureCandidate.IsWinningMove() {
 			weight += 1000
 		}
 	}
 
 	// Avoid moves that enable an enemy win next turn
-	futureEnemyCandidates := thoughtBoard.GetValidTurns(bot.EnemyTeam)
+	futureEnemyCandidates := thoughtBoard.ValidTurns(bot.EnemyTeam)
 	for _, futureEnemyCandidate := range futureEnemyCandidates {
-		if futureEnemyCandidate.IsVictory() {
+		if futureEnemyCandidate.IsWinningMove() {
 			weight -= 100000
 		}
 	}
@@ -130,7 +124,7 @@ func (bot KyleBot) getWeight(candidate santorini.Turn) int {
 	return weight
 }
 
-func (bot KyleBot) hasNearbyEnemyWorker(friendly int, tile santorini.Tile) bool {
+func (bot KyleBot) hasNearbyEnemyWorker(friendly uint8, tile santorini.Tile) bool {
 	surroundingTiles := bot.Board.GetSurroundingTiles(tile.GetX(), tile.GetY())
 	for _, surroundingTile := range surroundingTiles {
 		if team := surroundingTile.GetTeam(); team != 0 && team != friendly {
