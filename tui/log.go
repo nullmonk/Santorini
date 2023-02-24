@@ -3,8 +3,7 @@ package ui
 import (
 	"fmt"
 	"math"
-	santorini "santorini/pkg"
-	"santorini/pkg/color"
+	"santorini/santorini"
 	"strings"
 
 	"github.com/gen64/go-tui"
@@ -41,13 +40,13 @@ func (l *LogWidget) Printf(format string, a ...interface{}) {
 func (l *LogWidget) LogTurn(bot santorini.TurnSelector, turn santorini.Turn) {
 	msg := fmt.Sprintf("%s moves %sWorker %d%s to %d,%d",
 		bot.Name(),
-		color.GetWorkerColor(turn.Team, turn.Worker),
+		GetWorkerColor(int(turn.Worker.GetTeam()), 1),
 		turn.Worker,
-		color.Reset,
+		Reset,
 		turn.MoveTo.GetX(),
 		turn.MoveTo.GetY(),
 	)
-	if !turn.IsVictory() {
+	if !turn.IsWinningMove() {
 		msg += fmt.Sprintf(" and builds %d,%d", turn.Build.GetX(), turn.Build.GetY())
 	}
 	l.Printf(msg)

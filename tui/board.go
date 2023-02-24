@@ -2,19 +2,18 @@ package ui
 
 import (
 	"fmt"
-	santorini "santorini/pkg"
-	"santorini/pkg/color"
+	"santorini/santorini"
 
 	"github.com/gen64/go-tui"
 )
 
 // BoardWidget displays the board and updates it as needed
 type BoardWidget struct {
-	board *santorini.Board
+	board santorini.Board
 	pane  *tui.TUIPane
 }
 
-func NewBoardWidget(board *santorini.Board, pane *tui.TUIPane) *BoardWidget {
+func NewBoardWidget(board santorini.Board, pane *tui.TUIPane) *BoardWidget {
 	b := &BoardWidget{
 		pane:  pane,
 		board: board,
@@ -27,16 +26,17 @@ func NewBoardWidget(board *santorini.Board, pane *tui.TUIPane) *BoardWidget {
 }
 
 func (b *BoardWidget) update(p *tui.TUIPane) int {
-	for y := 0; y < b.board.Size; y++ {
-		for x := 0; x < b.board.Size; x++ {
+	w, h := b.board.Dimensions()
+	for y := uint8(0); y < h; y++ {
+		for x := uint8(0); x < w; x++ {
 			tile := b.board.GetTile(x, y)
 			tileIcon := fmt.Sprint(tile.GetHeight())
 			if tile.GetHeight() == 4 {
 				tileIcon = "^"
 			}
-			tileIcon = fmt.Sprintf("%s%v%s", color.GetWorkerColor(tile.GetTeam(), tile.GetWorker()), tileIcon, color.Reset)
-			p.Write(5*x+2, 3*y+1, tileIcon+tileIcon+tileIcon, false)
-			p.Write(5*x+2, 3*y+2, tileIcon+tileIcon+tileIcon, false)
+			tileIcon = fmt.Sprintf("%s%v%s", GetWorkerColor(int(tile.GetTeam()), 1), tileIcon, Reset)
+			p.Write(5*int(x)+2, 3*int(y)+1, tileIcon+tileIcon+tileIcon, false)
+			p.Write(5*int(x)+2, 3*int(y)+2, tileIcon+tileIcon+tileIcon, false)
 		}
 	}
 	return 1

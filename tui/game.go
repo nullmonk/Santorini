@@ -2,14 +2,14 @@ package ui
 
 import (
 	"os"
-	santorini "santorini/pkg"
+	"santorini/santorini"
 
 	"github.com/gen64/go-tui"
 	"github.com/sirupsen/logrus"
 )
 
 type Game struct {
-	Board       *santorini.Board
+	Board       santorini.Board
 	turnCounter int // the turn in the game it is Round = turnCounter/len(Teams)
 	Teams       []santorini.TurnSelector
 	Humans      []*Player // The human players
@@ -31,7 +31,7 @@ func NewGame(players int, bots ...santorini.BotInitializer) *Game {
 	// Make the panes
 	g := &Game{
 		t:      tui.NewTUI("", "", ""),
-		Board:  santorini.DefaultPosition(len(bots) + players),
+		Board:  santorini.NewFastBoard(),
 		Teams:  make([]santorini.TurnSelector, 0, len(bots)),
 		Humans: make([]*Player, 0, len(bots)),
 	}

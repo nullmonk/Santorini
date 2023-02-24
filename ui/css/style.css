@@ -1,0 +1,14 @@
+body {
+    overflow: hidden;
+    background-color: #cdedff;
+}
+#output {
+    position: absolute;
+    top: 50px; bottom: 0;
+    left: 0; right: 0;
+}
+
+#view-controls {
+    z-index:-1;
+    position: relative;
+}
