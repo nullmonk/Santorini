@@ -16,7 +16,7 @@ type FastBoard struct {
 }
 
 // Create a new Fastboard with the default layout
-func NewFastBoard(options ...func(Board)) *FastBoard {
+func NewBoard(options ...func(Board) Board) Board {
 	f := &FastBoard{
 		board:  make([]uint8, 25),
 		width:  5,
@@ -27,11 +27,26 @@ func NewFastBoard(options ...func(Board)) *FastBoard {
 		options = append(options, Default2Player)
 	}
 
+	var r Board
 	for _, o := range options {
-		o(f)
+		r = o(f)
 	}
 
-	return f
+	return r
+}
+
+func NewBoardFromHash(hash string) (*FastBoard, error) {
+	width := hash[0] - 65 + 3
+	size := len(hash) - 1
+	b := &FastBoard{
+		width:  width,
+		height: uint8(size / int(width)),
+		board:  make([]uint8, size),
+	}
+	for i, v := range hash[1:] {
+		b.board[i] = uint8(v) - 65
+	}
+	return b, nil
 }
 
 func (f *FastBoard) Dimensions() (uint8, uint8) {
@@ -48,6 +63,16 @@ func (f *FastBoard) Teams() []uint8 {
 
 func (f *FastBoard) Hash() string {
 	res := new(strings.Builder)
+	// Save the board (we only need the w as height = size/w)
+	w, _ := f.Dimensions()
+	if w > 29 {
+		panic("cannot hash a board larger than 29x29")
+	}
+	if w < 3 {
+		panic("cannot hash a board smaller than 3x3")
+	}
+	res.WriteByte(65 + w - 3)
+	// Save the board data
 	for _, i := range f.board {
 		res.WriteByte(i + 65)
 	}

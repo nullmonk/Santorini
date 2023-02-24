@@ -3,8 +3,6 @@ package bots
 import (
 	"fmt"
 	"santorini/santorini"
-
-	"github.com/sirupsen/logrus"
 )
 
 // RankFunction is a function that takes a turn, and ranks how good it is. The move with the highest rank gets chosen
@@ -19,7 +17,7 @@ type Bot struct {
 	name          string
 	team          uint8
 	EnemyTeams    []uint8
-	Logger        *logrus.Logger
+	Logger        *santorini.GameLog
 	deterministic bool
 
 	rankF    RankFunction
@@ -32,7 +30,7 @@ func NewBasicBot(name string, rf RankFunction, deterministic bool) santorini.Bot
 	if rf == nil {
 		panic(fmt.Errorf("No RankFunction specified for %s", name))
 	}
-	return func(team uint8, board santorini.Board, logger *logrus.Logger) santorini.TurnSelector {
+	return func(team uint8, board santorini.Board, logger *santorini.GameLog) santorini.TurnSelector {
 		return &Bot{
 			name:          name,
 			rankF:         rf,
@@ -49,7 +47,7 @@ func NewAdvancedBot(name string, rf RankAllFunction, deterministic bool) santori
 	if rf == nil {
 		panic(fmt.Errorf("No RankFunction specified for %s", name))
 	}
-	return func(team uint8, board santorini.Board, logger *logrus.Logger) santorini.TurnSelector {
+	return func(team uint8, board santorini.Board, logger *santorini.GameLog) santorini.TurnSelector {
 		return &Bot{
 			name:          name,
 			rankAllF:      rf,
@@ -76,7 +74,7 @@ func (r Bot) Log(fmtstr string, args ...interface{}) {
 	if r.Logger == nil {
 		return
 	}
-	r.Logger.Debugf(r.name+": ", fmt.Sprintf(fmtstr, args...))
+	r.Logger.Comment(r.name, fmtstr, args...)
 }
 
 func (r Bot) GameOver(win bool) {

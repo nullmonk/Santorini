@@ -1,0 +1,18 @@
+BOARD: CAAAAAAAIAAAQAQAAAIAAAAAAA
+# TEAMS: aubot vs. v1bot
+TURN: C1D0E0 # AuBot
+TURN: B2B1A0 # V1Bot
+TURN: D0E0D0 # AuBot
+TURN: B1A0A1 # V1Bot
+TURN: E0D0E0 # AuBot
+TURN: A0A1A0 # V1Bot
+TURN: D0E0D0 # AuBot
+TURN: A1A0A1 # V1Bot
+TURN: E0D0E0 # AuBot
+TURN: D2D1E0 # V1Bot
+TURN: C3B3B2 # AuBot
+TURN: A0A1A0 # V1Bot
+TURN: B3C3B3 # AuBot
+TURN: A1A0A1 # V1Bot
+# AuBot: saving updated model to model2.json, win=false
+# Simulation 2 Completed, Team 2 (V1Bot) won after 7 rounds

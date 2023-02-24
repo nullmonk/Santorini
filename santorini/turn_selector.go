@@ -1,8 +1,6 @@
 package santorini
 
-import "github.com/sirupsen/logrus"
-
-type BotInitializer func(team uint8, board Board, logger *logrus.Logger) TurnSelector
+type BotInitializer func(team uint8, board Board, logger *GameLog) TurnSelector
 
 type TurnSelector interface {
 	// The name of the bot

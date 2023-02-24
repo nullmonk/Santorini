@@ -3,8 +3,6 @@ package bots
 import (
 	"fmt"
 	"santorini/santorini"
-
-	"github.com/sirupsen/logrus"
 )
 
 const maxDepth = 1
@@ -15,7 +13,7 @@ type KyleBot struct {
 	Board     santorini.Board
 }
 
-func NewKyleBot(team uint8, board santorini.Board, logger *logrus.Logger) santorini.TurnSelector {
+func NewKyleBot(team uint8, board santorini.Board, logger *santorini.GameLog) santorini.TurnSelector {
 	enemy := uint8(2)
 	if team == 2 {
 		enemy = 1

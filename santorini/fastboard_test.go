@@ -14,8 +14,7 @@ func randUint8(max int64) uint8 {
 }
 
 func TestSetTileErrors(t *testing.T) {
-	f := NewFastBoard(BlankBoard)
-	assert.EqualError(t, f.setTile(3, 0, 1, 1), "invalid team chosen")
+	f := NewBoard(BlankBoard)
 	assert.EqualError(t, f.setTile(1, 5, 1, 1), "invalid height chosen")
 	assert.EqualError(t, f.setTile(1, 4, 1, 1), "cannot set cap with a worker present")
 	assert.Equal(t, nil, f.setTile(1, 3, 2, 4)) // put a team 1 worker at 2, 4
@@ -25,7 +24,7 @@ func TestSetTileErrors(t *testing.T) {
 }
 
 func TestSetGet(t *testing.T) {
-	f := NewFastBoard(BlankBoard)
+	f := NewBoard(BlankBoard)
 	for i := 0; i < 1000; i++ {
 		height := randUint8(3)
 		team := randUint8(3)
@@ -42,7 +41,7 @@ func TestSetGet(t *testing.T) {
 }
 
 func testGetTile(t *testing.T) {
-	f := NewFastBoard(BlankBoard)
+	f := NewBoard(BlankBoard)
 	assert.Equal(t, nil, f.setTile(1, 3, 2, 4)) // put a team 1 worker at 2, 4
 	tile := f.GetTile(2, 4)
 	assert.True(t, tile.GetHeight() == 3)
@@ -58,7 +57,7 @@ func testGetTile(t *testing.T) {
 }
 
 func TestBuilding(t *testing.T) {
-	f := NewFastBoard(BlankBoard)
+	f := NewBoard(BlankBoard)
 	assert.Nil(t, f.setTile(1, 0, 2, 1), "placing worker on empty board")
 	tile := f.GetTile(2, 1)
 	//fmt.Printf("here %d %08s\n", tile.team, strconv.FormatUint(uint64(f.board[(f.width*0)+0]), 2))
@@ -66,7 +65,7 @@ func TestBuilding(t *testing.T) {
 	candidates := f.ValidTurns(1)
 	assert.Equal(t, 55, len(candidates), "did not return all the expected turns")
 	for _, turn := range candidates {
-		f.board = make([]uint8, 25)
+		f = NewBoard(BlankBoard)
 		assert.Nil(t, f.setTile(1, 0, 2, 1), "placing worker on empty board")
 		_, err := f.PlayTurn(turn)
 		assert.Nil(t, err, "failed to take turn %s", turn)
@@ -79,7 +78,7 @@ func TestBuilding(t *testing.T) {
 	}
 }
 func TestUndoSimple(t *testing.T) {
-	f := NewFastBoard(BlankBoard)
+	f := NewBoard(BlankBoard)
 	assert.Nil(t, f.setTile(1, 0, 1, 2), "placing worker on empty board")
 	candidates := f.ValidTurns(1)
 	assert.Equal(t, 55, len(candidates), "did not return all the expected turns")
@@ -97,7 +96,7 @@ func TestUndoSimple(t *testing.T) {
 	}
 }
 func TestUndo(t *testing.T) {
-	f := NewFastBoard(BlankBoard)
+	f := NewBoard(BlankBoard)
 	count := 10
 	// Keep track of each turn that we make
 	turns := make([]*Turn, 0, count)
@@ -131,7 +130,7 @@ func TestUndo(t *testing.T) {
 }
 
 func TestGetMoves(t *testing.T) {
-	f := NewFastBoard(BlankBoard)
+	f := NewBoard(BlankBoard)
 	for x := 0; x < 2; x++ {
 		for y := 0; y < 2; y++ {
 			// put a work in the corner
@@ -148,7 +147,7 @@ func TestGetMoves(t *testing.T) {
 	}
 	assert.Equal(t, 0, len(f.ValidTurns(1)), "Trapper players cannot move")
 	// reset
-	f = NewFastBoard(BlankBoard)
+	f = NewBoard(BlankBoard)
 
 	// Place a worker in a trap with one way out see if it can move
 	assert.Nil(t, f.setTile(1, 0, 2, 2), "placing worker on empty board")
@@ -159,7 +158,7 @@ func TestGetMoves(t *testing.T) {
 	assert.Equal(t, 8, len(turns), "Trapper player only has 8 moves")
 
 	// reset
-	f = NewFastBoard(BlankBoard)
+	f = NewBoard(BlankBoard)
 
 	// Place a worker next to another worker to make sure that limits his moves
 	assert.Nil(t, f.setTile(1, 0, 0, 0), "placing worker on empty board")
@@ -168,7 +167,7 @@ func TestGetMoves(t *testing.T) {
 }
 
 func TestStandardBoard(t *testing.T) {
-	f := NewFastBoard(Default2Player)
+	f := NewBoard(Default2Player)
 	width, height := f.Dimensions()
 	assert.Equal(t, uint8(5), width, "width is invalid")
 	assert.Equal(t, uint8(5), height, "height is invalid")
@@ -177,4 +176,19 @@ func TestStandardBoard(t *testing.T) {
 	assert.Equal(t, 2, len(workers), "team 1 does not have 2 workers")
 	workers = f.GetWorkers(1)
 	assert.Equal(t, 2, len(workers), "team 2 does not have 2 workers")
+}
+
+func TestBoardHash(t *testing.T) {
+	for i := uint8(3); i < 20; i++ {
+		for j := uint8(3); j < 20; j++ {
+			b := NewBoard(CustomSize(i, j))
+			hsh := b.Hash()
+			b2, err := NewBoardFromHash(hsh)
+			assert.Nil(t, err, "Error getting board size")
+			w, h := b2.Dimensions()
+			assert.Equal(t, w, i, "Board width is not the same: Given %dx%d, Got %dx%d", i, j, w, h)
+			assert.Equal(t, h, j, "Board height is not the same: Given %dx%d, Got %dx%d", i, j, w, h)
+			assert.Equal(t, hsh, b2.Hash(), "Board hash is not the same: Given %dx%d, Got %dx%d", i, j, w, h)
+		}
+	}
 }

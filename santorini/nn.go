@@ -10,7 +10,7 @@ import (
 
 // Implement some sort of whatever for a custom "neural net", really just a bunch of weights that choose the turn
 
-const numWeights = 20
+const numWeights = 28
 
 type trait struct {
 	t uint32
@@ -48,7 +48,6 @@ func (t *trait) String() string {
 type AuNet struct {
 	mu      sync.Mutex
 	weights []int
-	count   int
 }
 
 func NewAuNet() *AuNet {
@@ -61,31 +60,28 @@ func (a *AuNet) AddTurn(b Board, t *Turn) {
 	if t == nil {
 		return
 	}
-	tr := t.toVector(b)
+	tr := t.toVectorBin(b)
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	for i := 0; i < numWeights; i++ {
-		a.weights[i] += tr.Pop() * (a.count / 2)
+		a.weights[i] += tr.Pop()
 	}
-	a.count++
 }
 
 func (a *AuNet) RankTurn(b Board, t *Turn) int {
 	res := 0
-	tr := t.toVector(b)
+	tr := t.toVectorBin(b)
 	for i := 0; i < numWeights; i++ {
 		res += a.weights[i] * tr.Pop()
 	}
 	return res
 }
 
-const shrinkFactor = 3
-
 func (a *AuNet) Add(b *AuNet) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	for i, v := range b.weights {
-		a.weights[i] += v / shrinkFactor
+		a.weights[i] += v / 10
 	}
 }
 
@@ -93,7 +89,7 @@ func (a *AuNet) Sub(b *AuNet) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	for i, v := range b.weights {
-		a.weights[i] -= v / shrinkFactor
+		a.weights[i] -= v / 10
 	}
 }
 
@@ -124,17 +120,8 @@ func LoadAuNet(fn string) (a *AuNet, err error) {
 	return a, nil
 }
 
-func (t *Turn) toVector(b Board) (tr *trait) {
-	tr = NewTrait()
-	tr.Push(t.Worker.height < t.MoveTo.height)                         // Jumping Up
-	tr.Push(t.Worker.height > t.MoveTo.height)                         // Jumping Down
-	tr.Push(t.Worker.height > t.MoveTo.height && t.MoveTo.height == 0) // Jumping Down
-	tr.Push(t.MoveTo.height == 2)                                      // Moving up
-	tr.Push(t.Build.height == 2)                                       // Building a 3rd row
-	tr.Push(t.Build.height == 1)                                       // Building off the ground
-
-	// Both workers off ground?
-	//
+func (t *Turn) toVectorBin(b Board) (tr *trait) {
+	// Building off the ground
 
 	var eAtWorker, eAtMove, eAtBuild bool
 	var fAtMove, fAtBuild bool
@@ -142,9 +129,7 @@ func (t *Turn) toVector(b Board) (tr *trait) {
 	var buildOnEdge, buildInCorner bool
 	var moveOnEdge, moveInCorner bool
 
-	// Track if the enemy can hop up onto our builds
-	var eCanWin, eCanJump bool
-
+	var eCanWin, eCanClimb bool
 	for _, st := range b.GetSurroundingTiles(t.Worker.x, t.Worker.y) {
 		if st.team > 0 && st.team != t.Worker.team {
 			eAtWorker = true // enemies
@@ -165,6 +150,8 @@ func (t *Turn) toVector(b Board) (tr *trait) {
 			standOnTower = false
 		}
 	}
+	surroundingAboveGround := 0
+
 	surrounding = b.GetSurroundingTiles(t.Build.x, t.Build.y)
 	buildInCorner = len(surrounding) == 3 // corner
 	buildOnEdge = len(surrounding) == 5   // edge
@@ -172,11 +159,11 @@ func (t *Turn) toVector(b Board) (tr *trait) {
 		if st.team > 0 {
 			if st.team != t.Worker.team {
 				eAtBuild = true
-				if t.Build.height == st.height {
+				if st.height == t.Build.height {
+					eCanClimb = true
 					if st.height == 2 {
 						eCanWin = true
 					}
-					eCanJump = true
 				}
 			} else {
 				fAtBuild = true
@@ -185,10 +172,30 @@ func (t *Turn) toVector(b Board) (tr *trait) {
 		if st.height > t.Build.height {
 			tower = false
 		}
+		if st.height > 0 {
+			surroundingAboveGround++
+		}
 	}
+	tr = NewTrait() // 19 traits
+	// 10
+	tr.Push(t.Worker.height < t.MoveTo.height)                         // Jumping Up
+	tr.Push(t.Worker.height > t.MoveTo.height)                         // Jumping Down
+	tr.Push(t.Worker.height > t.MoveTo.height && t.MoveTo.height == 0) // Jumping Down
+	tr.Push(t.Worker.height == 1)
+	tr.Push(t.Worker.height == 2) // Prioritize higher workers?
+	tr.Push(t.MoveTo.height == 2) // Moving up
+	tr.Push(t.Build.height == 2)  // Building a 3rd row
+	tr.Push(t.Build.height == 1)
+	tr.Push(surroundingAboveGround == 1)
+	tr.Push(t.Build.height > t.MoveTo.height-1)
+
+	// Random traits for the ai to figure out
+	tr.Push(t.Build.x == t.Worker.x && t.Build.y == t.Worker.y) // like building in our old spot
+	//tr.Push(t.Worker.x != t.MoveTo.x && t.Worker.y != t.MoveTo.y) // like moving diagonally
+	// 13
 	tr.Push(eAtWorker, eAtMove, eAtBuild)
 	tr.Push(fAtMove, fAtBuild, tower, standOnTower)
 	tr.Push(buildInCorner, buildOnEdge, moveInCorner, moveOnEdge)
-	tr.Push(eCanJump, eCanWin)
+	tr.Push(eCanClimb, eCanWin)
 	return
 }

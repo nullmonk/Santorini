@@ -17,9 +17,9 @@ var knownbots = map[string]santorini.BotInitializer{
 	"randombot": bots.NewRandomBot(),
 	"v1bot":     bots.NewV1Bot(),
 	"kylebot":   bots.NewKyleBot,
-	"aubot":     bots.NewAuBot("model2.json", true),
+	"aubot":     bots.NewAuBot("model2.json", true, true),
 	"aubot2":    bots.NewAuBot("model2.json", false),
-	"aubot3":    bots.NewAuBot("beastmodel.json", false),
+	"kbk":       bots.NewAuBot("kbk.json", false),
 }
 
 type options struct {
@@ -34,6 +34,7 @@ type overallstats struct {
 	sumRounds  int
 	loseBoards []santorini.Board
 	pb         *progressbar.ProgressBar
+	dumpLoss   bool
 }
 
 func (stats *overallstats) update(sim *santorini.Simulation) {
@@ -43,6 +44,9 @@ func (stats *overallstats) update(sim *santorini.Simulation) {
 	} else {
 		stats.bot2Wins++
 		// Keep track of the losses
+		if stats.dumpLoss {
+			sim.Logger.Dump(os.Stdout)
+		}
 		stats.loseBoards = append(stats.loseBoards, sim.Board)
 	}
 	stats.sumRounds += len(sim.Turns) / 2
@@ -80,8 +84,8 @@ func main() {
 
 	//logrus.SetLevel(logrus.DebugLevel)
 	// Deterministic bots dont need to be run many times (unless explicitly told to)
-	b1 := bot1(0, santorini.NewFastBoard(santorini.BlankBoard), nil)
-	b2 := bot2(0, santorini.NewFastBoard(santorini.BlankBoard), nil)
+	b1 := bot1(0, santorini.NewBoard(santorini.BlankBoard), nil)
+	b2 := bot2(0, santorini.NewBoard(santorini.BlankBoard), nil)
 
 	if b1.IsDeterministic() && b2.IsDeterministic() {
 		opts.simCount = 2
@@ -99,6 +103,7 @@ func main() {
 	stats := &overallstats{
 		loseBoards: make([]santorini.Board, 0, opts.simCount),
 		pb:         progressbar.Default(int64(opts.simCount), "0 / 0"),
+		dumpLoss:   false,
 	}
 
 	wg := new(sync.WaitGroup)

@@ -14,26 +14,15 @@ type Simulation struct {
 	Number int
 	Board  Board
 	Teams  []TurnSelector
-	logger *logrus.Logger
+	Logger *GameLog
 	Victor uint8
 	Turns  []string
 	round  int
 }
 
 func NewSimulator(number int, logger *logrus.Logger, bots ...BotInitializer) *Simulation {
-	b := NewFastBoard(Default2Player)
-	lgr := logger
-	// Unless we are debugging, hide all bot logs except for fatal ones
-	if logger.Level != logrus.DebugLevel {
-		// Copy the formatter
-		lgr = &logrus.Logger{
-			Out:       logger.Out,
-			Hooks:     logger.Hooks,
-			Formatter: logger.Formatter,
-			Level:     logrus.FatalLevel,
-		}
-	}
-
+	b := NewBoard(Default2Player)
+	lgr := NewGameLog(b, os.Args[1:len(bots)+1]...)
 	var teams []TurnSelector
 
 	switch len(bots) {
@@ -57,7 +46,7 @@ func NewSimulator(number int, logger *logrus.Logger, bots ...BotInitializer) *Si
 		Number: number,
 		Board:  b,
 		Teams:  teams,
-		logger: lgr,
+		Logger: lgr,
 		Turns:  make([]string, 0, 50),
 	}
 }
@@ -80,11 +69,12 @@ func (sim *Simulation) doRound() (victor uint8) {
 	for i, bot = range sim.Teams {
 		turn := bot.SelectTurn(sim.Board.Clone())
 		if turn == nil {
-			sim.logger.Debugf("Team %d (%s) has no moves", i+1, bot.Name())
+			sim.Logger.Comment("Sim", "Team %d (%s) has no moves", i+1, bot.Name())
 			return uint8((i+1)%len(sim.Teams)) + 1
 		}
 
 		isOver, err := sim.Board.PlayTurn(turn)
+		sim.Logger.LogTurn(turn, bot.Name())
 		sim.Turns = append(sim.Turns, turn.String())
 		if isOver {
 			return uint8(i) + 1
@@ -111,7 +101,7 @@ func (sim *Simulation) Run() {
 			bot.GameOver(false)
 		}
 	}
-	sim.logger.Debugf("Simulation %d Completed, Team %d (%s) won after %d rounds", sim.Number, victor, sim.Teams[victor-1].Name(), sim.round)
+	sim.Logger.Comment("", "Simulation %d Completed, Team %d (%s) won after %d rounds", sim.Number, victor, sim.Teams[victor-1].Name(), sim.round)
 }
 
 func DumpBoardMini(b Board) string {
@@ -125,7 +115,7 @@ func DumpBoardMini(b Board) string {
 		}
 		line += "\n"
 	}
-	return line
+	return strings.TrimSpace(line)
 }
 
 func DumpBoard(b Board, p io.Writer) int {
