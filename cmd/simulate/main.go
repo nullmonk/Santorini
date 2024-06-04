@@ -19,6 +19,7 @@ var knownbots = map[string]santorini.BotInitializer{
 	"kylebot":   bots.NewKyleBot,
 	"aubot":     bots.NewAuBot("model2.json", true, true),
 	"aubot2":    bots.NewAuBot("model2.json", false),
+	"nb":        bots.NewAuBot("nb.json", true),
 	"kbk":       bots.NewAuBot("kbk.json", false),
 }
 
@@ -82,10 +83,10 @@ func main() {
 		simCount:    1000,
 	}
 
-	//logrus.SetLevel(logrus.DebugLevel)
+	logrus.SetLevel(logrus.DebugLevel)
 	// Deterministic bots dont need to be run many times (unless explicitly told to)
 	b1 := bot1(0, santorini.NewBoard(santorini.BlankBoard), nil)
-	b2 := bot2(0, santorini.NewBoard(santorini.BlankBoard), nil)
+	b2 := bot2(1, santorini.NewBoard(santorini.BlankBoard), nil)
 
 	if b1.IsDeterministic() && b2.IsDeterministic() {
 		opts.simCount = 2

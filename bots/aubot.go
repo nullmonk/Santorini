@@ -70,6 +70,7 @@ func (r *AuBot) Log(fmtstr string, args ...interface{}) {
 func (r *AuBot) GameOver(win bool) {
 	// update our model with the training model
 	if !r.learn {
+		r.Log("this model does not learn")
 		return // this model does not learn
 	}
 	if win {
@@ -81,6 +82,7 @@ func (r *AuBot) GameOver(win bool) {
 		r.Log("saving updated model to %s, win=%v", r.modelFil, win)
 		r.model.Save(r.modelFil)
 	}
+	r.Log("this model does not learn")
 
 	// reset the traing model
 	r.trainingModel = santorini.NewAuNet()

@@ -26,15 +26,18 @@ var zoomfactor = 5;
 
 function Rotate() {
     rotation++
+    console.log("rotating", rotation)
     DrawBoard()
 }
 
 function ZoomIn() {
     zoomfactor--;
+    DrawBoard()
 }
 
 function ZoomOut() {
     zoomfactor++;
+    DrawBoard()
 }
 // Convert an X and Y into the actual X/Y accounting for rotation
 function withRotation(x, y) {
@@ -87,7 +90,7 @@ function DrawBoard(data) {
     drawtile(3,2,2,null, ColorBuildHighlight)
     drawtile(2,2,2,null, ColorBuildHighlight)
     drawtile(2,1,4,red)
-    drawtile(0,0,4,red)
+    drawtile(0,0,3,blue)
     Redraw()
 }
 

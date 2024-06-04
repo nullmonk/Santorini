@@ -106,13 +106,12 @@ func (a *AuNet) Save(fn string) error {
 }
 
 func LoadAuNet(fn string) (a *AuNet, err error) {
-	d, err := os.ReadFile(fn)
-	if err != nil {
-		return nil, err
-	}
 	a = &AuNet{}
-	if err = json.Unmarshal(d, &a.weights); err != nil {
-		return nil, err
+	d, err := os.ReadFile(fn)
+	if err == nil {
+		if err = json.Unmarshal(d, &a.weights); err != nil {
+			return nil, err
+		}
 	}
 	if len(a.weights) < numWeights {
 		a.weights = make([]int, numWeights)
