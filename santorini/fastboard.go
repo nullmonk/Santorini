@@ -6,13 +6,14 @@ import (
 	"strings"
 )
 
-// FastBoard implements the board interface and uses a single array as the storage mechanism
+// FastBoard uses a single array as the storage mechanism
 type FastBoard struct {
 	// Last three bits are the tile height, rest is team number
 	board     []uint8
 	width     uint8
 	height    uint8
 	turnCount uint // number of turns that have been taken on this board (used to calculate which teams turn it is)
+
 }
 
 // Create a new Fastboard with the default layout

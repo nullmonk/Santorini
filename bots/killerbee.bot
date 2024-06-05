@@ -9,9 +9,9 @@ def rank(board, turn):
         rank += 100
     elif elev == -1:
         # Moving down is generally bad
-        rank -= 50
-    elif elev == -2:
         rank -= 100
+    elif elev == -2:
+        rank -= 150
 
     # Corner strat good
     if turn.build.x in [board.width,1] and turn.build.y in [board.height,1]:
@@ -26,15 +26,32 @@ def rank(board, turn):
                     # Enemy can win if we build here
                     rank -= 100000
                 # If we are building next to an enemy, they can just cap it
-                rank -= 10
+            rank -= 10
 
         # We want to build up around us so we dont have holes
         if tile.height < turn.worker.height:
             rank += 1
+    
+    # check out where we are moving
+    for tile in board.get_surrounding_tiles(turn.move.x, turn.move.y):
+        # avoid moving next to ourselves
+        if tile.team > 0 and tile.team == turn.worker.team:
+            rank -= 50
+    
     if turn.is_winning_move:
         rank += 100000000
 
     # Building up is good
+    if turn.build.height == 2 and turn.worker.height == 2:
+        # This is good we are building a level 3 where we can reach
+        rank += 100
+    if turn.build.height > turn.move.height:
+        rank -= 150
+
+    if turn.build.height == turn.worker.height:
+        # build tiles up that our next to ourselves
+        rank += 10
+
     if turn.build.height > 0 and turn.move.height > 0:
         rank += 10* turn.build.height
     return rank

@@ -6,7 +6,7 @@ import (
 	"go.starlark.net/starlark"
 )
 
-/* TStarlark functions for the board object*/
+/* Starlark functions and atttributes for the board object, used by the bots to gather information */
 
 // Functions needed for starlark.Value
 func (f FastBoard) String() string {
