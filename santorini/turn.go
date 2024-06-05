@@ -3,6 +3,8 @@ package santorini
 import (
 	"fmt"
 	"strconv"
+
+	"go.starlark.net/starlark"
 )
 
 type Turn struct {
@@ -44,6 +46,11 @@ func TurnFromString(team uint8, s string) (*Turn, error) {
 	return turn, err
 }
 
+func (t *Turn) IsWinningMove() bool {
+	return t.MoveTo.GetHeight() == 3
+}
+
+// Functions needed for starlark.Value
 func (t Turn) String() string {
 	return fmt.Sprintf("%c%d%c%d%c%d",
 		rune(t.Worker.x+65),
@@ -55,6 +62,46 @@ func (t Turn) String() string {
 	)
 }
 
-func (t *Turn) IsWinningMove() bool {
-	return t.MoveTo.GetHeight() == 3
+func (t Turn) Type() string {
+	return "Turn"
+}
+func (t Turn) Freeze() {
+}
+func (t Turn) Truth() starlark.Bool {
+	return starlark.True
+}
+func (t Turn) Hash() (uint32, error) {
+	return 0, fmt.Errorf("cannot hash")
+}
+
+// Functions needed for starlark.HasAttr
+/*
+type HasAttrs interface {
+	Value
+	Attr(name string) (Value, error) // returns (nil, nil) if attribute not present
+	AttrNames() []string             // callers must not modify the result.
+}
+*/
+
+// All the things accessible from this object
+func (t Turn) Attr(name string) (starlark.Value, error) {
+	switch name {
+	case "worker":
+		return &t.Worker, nil
+	case "move":
+		return &t.MoveTo, nil
+	case "build":
+		return &t.Build, nil
+	case "is_winning_move":
+		if t.MoveTo.height == 3 {
+			return starlark.True, nil
+		} else {
+			return starlark.False, nil
+		}
+	}
+	return nil, fmt.Errorf("not found")
+}
+
+func (t Turn) AttrNames() []string {
+	return []string{"worker", "move", "build", "is_winning_move"}
 }

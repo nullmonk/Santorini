@@ -24,7 +24,7 @@ func main() {
 	defer f.Close()
 	scanner := bufio.NewScanner(f)
 
-	var b santorini.Board
+	var b *santorini.FastBoard
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if strings.HasPrefix(line, "BOARD: ") {
@@ -45,7 +45,7 @@ func main() {
 				log.Fatal(fmt.Errorf("error playing turn %s: %s", turn, err))
 			}
 			fmt.Println("\n" + line)
-			fmt.Println(santorini.DumpBoardMini(b))
+			fmt.Println(DumpBoardMini(b))
 			continue
 		}
 		fmt.Println(scanner.Text())
@@ -53,4 +53,18 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func DumpBoardMini(b *santorini.FastBoard) string {
+	width, height := b.Dimensions()
+	line := ""
+	for y := uint8(0); y < height; y++ {
+		for x := uint8(0); x < width; x++ {
+			tile := b.GetTile(x, y)
+			tileIcon := TileIcon(tile)
+			line += tileIcon
+		}
+		line += "\n"
+	}
+	return strings.TrimSpace(line)
 }

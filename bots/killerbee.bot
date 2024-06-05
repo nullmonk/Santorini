@@ -1,0 +1,53 @@
+"""
+Killer bee is a pretty good bot, he will always try to build up and avoid building where you can win
+"""
+def rank(board, turn):
+    rank = 0
+    elev = turn.move.height - turn.worker.height
+    # if the worker is moving up, thats a good thing generally
+    if elev == 1:
+        rank += 100
+    elif elev == -1:
+        # Moving down is generally bad
+        rank -= 50
+    elif elev == -2:
+        rank -= 100
+
+    # Corner strat good
+    if turn.build.x in [board.width,1] and turn.build.y in [board.height,1]:
+        rank += 10
+
+    # Check out around where we are building
+    for tile in board.get_surrounding_tiles(turn.build.x, turn.build.y):
+        if tile.team > 0 and tile.team != turn.worker.team:
+            # Building near enemy is bad
+            if turn.build.height == 2:
+                if tile.height == 2:
+                    # Enemy can win if we build here
+                    rank -= 100000
+                # If we are building next to an enemy, they can just cap it
+                rank -= 10
+
+        # We want to build up around us so we dont have holes
+        if tile.height < turn.worker.height:
+            rank += 1
+    if turn.is_winning_move:
+        rank += 100000000
+
+    # Building up is good
+    if turn.build.height > 0 and turn.move.height > 0:
+        rank += 10* turn.build.height
+    return rank
+
+def take_turn(board, turns):
+    """Generic function that will randomly choose between the best ranked functions"""
+    turn_choices = []
+    best_rank = -99999999999999999999
+    for t in turns:
+        r = rank(board, t)
+        if r > best_rank:
+            turn_choices = [t]
+            best_rank = r
+        if r == best_rank:
+            turn_choices.append(t)
+    return random.choice(turn_choices)

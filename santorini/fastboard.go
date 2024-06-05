@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// fastBoard implements the board interface and uses a single array as the storage mechanism
+// FastBoard implements the board interface and uses a single array as the storage mechanism
 type FastBoard struct {
 	// Last three bits are the tile height, rest is team number
 	board     []uint8
@@ -16,7 +16,7 @@ type FastBoard struct {
 }
 
 // Create a new Fastboard with the default layout
-func NewBoard(options ...func(Board) Board) Board {
+func NewBoard(options ...func(*FastBoard) *FastBoard) *FastBoard {
 	f := &FastBoard{
 		board:  make([]uint8, 25),
 		width:  5,
@@ -27,7 +27,7 @@ func NewBoard(options ...func(Board) Board) Board {
 		options = append(options, Default2Player)
 	}
 
-	var r Board
+	var r *FastBoard
 	for _, o := range options {
 		r = o(f)
 	}
@@ -61,7 +61,11 @@ func (f *FastBoard) Teams() []uint8 {
 	return teams
 }
 
-func (f *FastBoard) Hash() string {
+/*
+The boardhash is an ascii string that contains state of the game, including what is on each tile
+and the size of the board
+*/
+func (f *FastBoard) GameHash() string {
 	res := new(strings.Builder)
 	// Save the board (we only need the w as height = size/w)
 	w, _ := f.Dimensions()
@@ -71,6 +75,8 @@ func (f *FastBoard) Hash() string {
 	if w < 3 {
 		panic("cannot hash a board smaller than 3x3")
 	}
+
+	// Stash the width, we can calc height by len of hash and width
 	res.WriteByte(65 + w - 3)
 	// Save the board data
 	for _, i := range f.board {
@@ -80,7 +86,7 @@ func (f *FastBoard) Hash() string {
 }
 
 /**** Game Flow Functions ****/ //
-func (f *FastBoard) Clone() Board {
+func (f *FastBoard) Clone() *FastBoard {
 	b := &FastBoard{
 		board:     make([]uint8, len(f.board)),
 		width:     f.width,
@@ -120,6 +126,7 @@ func (f *FastBoard) UndoTurn(t *Turn) error {
 	if have != want {
 		return fmt.Errorf("worker block has changed: expected %v, found %v", want, have)
 	}
+	f.turnCount--
 	return nil
 }
 func (f *FastBoard) PlayTurn(t *Turn) (victory bool, err error) {
@@ -179,6 +186,8 @@ func (f *FastBoard) PlayTurn(t *Turn) (victory bool, err error) {
 			return true, nil
 		}
 	}
+
+	f.turnCount++
 	return false, nil
 }
 

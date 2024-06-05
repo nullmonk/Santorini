@@ -1,0 +1,8 @@
+"""
+Random will try to win, but that is it
+"""
+def take_turn(board, turns):
+    for turn in turns:
+        if turn.is_winning_move:
+            return turn
+    return random.choice(turns)

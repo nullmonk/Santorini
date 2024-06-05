@@ -1,8 +1,11 @@
 package santorini
 
+/* implement a tile object that is accessible by the starlark script */
 import (
 	"encoding/json"
 	"fmt"
+
+	"go.starlark.net/starlark"
 )
 
 type Tile struct {
@@ -10,6 +13,51 @@ type Tile struct {
 	height uint8 // 0 no building, 4 capped
 	x      uint8 // x position of the tile
 	y      uint8 // y position of the tile
+}
+
+// Functions needed for starlark.Value
+func (t Tile) String() string {
+	s, _ := t.MarshalJSON()
+	return string(s)
+}
+func (t Tile) Type() string {
+	return "Tile"
+}
+func (t Tile) Freeze() {
+}
+func (t Tile) Truth() starlark.Bool {
+	return starlark.True
+}
+func (t Tile) Hash() (uint32, error) {
+	return 0, fmt.Errorf("cannot hash")
+}
+
+// Functions needed for starlark.HasAttr
+/*
+type HasAttrs interface {
+	Value
+	Attr(name string) (Value, error) // returns (nil, nil) if attribute not present
+	AttrNames() []string             // callers must not modify the result.
+}
+*/
+
+// All the things accessible from this object
+func (t Tile) Attr(name string) (starlark.Value, error) {
+	switch name {
+	case "team":
+		return starlark.MakeInt(int(t.team)), nil
+	case "height":
+		return starlark.MakeInt(int(t.height)), nil
+	case "x":
+		return starlark.MakeInt(int(t.x)), nil
+	case "y":
+		return starlark.MakeInt(int(t.y)), nil
+	}
+	return nil, fmt.Errorf("not found")
+}
+
+func (t Tile) AttrNames() []string {
+	return []string{"team", "height", "x", "y"}
 }
 
 func (t *Tile) MarshalJSON() ([]byte, error) {

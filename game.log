@@ -1,0 +1,19 @@
+BOARD: CAAAAAAAIAAAQAQAAAIAAAAAAA
+# TEAMS: random.bot vs. killerbee.bot
+TURN: C1C0B0 # random.bot
+TURN: B2B1B0 # killerbee.bot
+TURN: C3B3C2 # random.bot
+TURN: B1B2B1 # killerbee.bot
+TURN: B3A3A2 # random.bot
+TURN: B2B1B0 # killerbee.bot
+TURN: A3B2A1 # random.bot
+TURN: B1A1A0 # killerbee.bot
+TURN: C0C1B0 # random.bot
+TURN: A1A0A1 # killerbee.bot
+TURN: B2A3A4 # random.bot
+TURN: A0A1A0 # killerbee.bot
+TURN: C1D1E0 # random.bot
+TURN: A1A0A1 # killerbee.bot
+TURN: D1E2D1 # random.bot
+TURN: A0A1A0 # killerbee.bot
+# killerbee.bot: wins game

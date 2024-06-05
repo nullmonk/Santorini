@@ -84,10 +84,10 @@ func TestUndoSimple(t *testing.T) {
 	assert.Equal(t, 55, len(candidates), "did not return all the expected turns")
 	for i, turn := range candidates {
 		assert.Equal(t, uint8(1), turn.Worker.team)
-		origHash := f.Hash()
+		origHash := f.GameHash()
 		_, err := f.PlayTurn(turn)
 		err2 := f.UndoTurn(turn)
-		assert.Equal(t, origHash, f.Hash(), "[Test %d] board hashes do not match: %s != %s", i, f.Hash(), origHash)
+		assert.Equal(t, origHash, f.GameHash(), "[Test %d] board hashes do not match: %s != %s", i, f.GameHash(), origHash)
 		assert.Nil(t, err, "failed to take turn %s", turn)
 		assert.Nil(t, err2, "failed to undo turn %s", turn)
 		if err != nil || err2 != nil {
@@ -101,7 +101,7 @@ func TestUndo(t *testing.T) {
 	// Keep track of each turn that we make
 	turns := make([]*Turn, 0, count)
 	assert.Nil(t, f.setTile(1, 0, 2, 2), "placing worker on empty board")
-	startHsh := f.Hash()
+	startHsh := f.GameHash()
 	for i := 0; i < count; i++ {
 		// Get the possible turns for the player
 		candidates := f.ValidTurns(1)
@@ -126,7 +126,7 @@ func TestUndo(t *testing.T) {
 		assert.Nil(t, err, "Failed to undo turn %s", turns[i])
 
 	}
-	assert.Equal(t, startHsh, f.Hash())
+	assert.Equal(t, startHsh, f.GameHash())
 }
 
 func TestGetMoves(t *testing.T) {
@@ -182,13 +182,13 @@ func TestBoardHash(t *testing.T) {
 	for i := uint8(3); i < 20; i++ {
 		for j := uint8(3); j < 20; j++ {
 			b := NewBoard(CustomSize(i, j))
-			hsh := b.Hash()
+			hsh := b.GameHash()
 			b2, err := NewBoardFromHash(hsh)
 			assert.Nil(t, err, "Error getting board size")
 			w, h := b2.Dimensions()
 			assert.Equal(t, w, i, "Board width is not the same: Given %dx%d, Got %dx%d", i, j, w, h)
 			assert.Equal(t, h, j, "Board height is not the same: Given %dx%d, Got %dx%d", i, j, w, h)
-			assert.Equal(t, hsh, b2.Hash(), "Board hash is not the same: Given %dx%d, Got %dx%d", i, j, w, h)
+			assert.Equal(t, hsh, b2.GameHash(), "Board hash is not the same: Given %dx%d, Got %dx%d", i, j, w, h)
 		}
 	}
 }

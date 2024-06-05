@@ -6,3 +6,5 @@ Each tile gets 4 bits (level 0-2)
 bit/team 1 | bit/team 2 | 2 bits/level (0-3)
 Capp = team1 & team2
 Empty = !team1 & !team2
+
+
