@@ -1,0 +1,5 @@
+{
+    "password": "",
+    "name": "random2",
+    "contents": "def take_turn(board, turns):\n    for turn in turns:\n        if turn.is_winning_move:\n            return turn\n    return random.choice(turns)\n"
+}

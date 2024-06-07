@@ -194,6 +194,18 @@ func ToGolangValue(val starlark.Value) (interface{}, error) {
 	}
 }
 
+func StringDictToGo(v starlark.StringDict) map[string]any {
+	dict := make(map[string]interface{})
+	for k, val := range v {
+		i, err := ToGolangValue(val)
+		if err != nil {
+			return nil
+		}
+		dict[k] = i
+	}
+	return dict
+}
+
 func notImplemented(module, name string) Function {
 	return func(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		return nil, fmt.Errorf("%s.%s not implemented", module, name)

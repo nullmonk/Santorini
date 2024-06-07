@@ -1,21 +1,27 @@
 package santorini
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"santorini/santorini/modules"
 	"strings"
+	"time"
 
+	starjson "go.starlark.net/lib/json"
+	starmath "go.starlark.net/lib/math"
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 )
 
+const ExpireTime = time.Hour * 24 // Games get removed after 24 hours
+
 type Player struct {
-	Name   string // The name of the bot
-	Source any    // Bot source code
-	Team   int    // The team number this bot is
+	Name   string `json:"name"`   // The name of the bot
+	Source any    `json:"source"` // Bot source code
+	Team   int    `json:"team"`   // The team number this bot is
 
 	logName string              // NAME (team number)
 	globals starlark.StringDict // Bot specific globals
@@ -123,6 +129,8 @@ func NewGame(id int, log io.Writer, players ...*Player) *Game {
 		Players: make([]*Player, 0, len(players)),
 		globals: starlark.StringDict{
 			"random": modules.Random,
+			"json":   starjson.Module,
+			"math":   starmath.Module,
 			// TODO Add other modules here
 		},
 		board:  b,
@@ -226,4 +234,66 @@ func (g *Game) GetTextLog() string {
 		return log.String()
 	}
 	return ""
+}
+
+func (g *Game) MarshalJSON() ([]byte, error) {
+	// If we have the log contents, dump them to the DB
+	log := ""
+	if b, ok := g.log.(*strings.Builder); ok {
+		log = b.String()
+	}
+	return json.Marshal(struct {
+		Board      string    `json:"board"`
+		TurnCount  int       `json:"turn_count"`
+		Log        string    `json:"log"`
+		Players    []*Player `json:"players"`
+		Id         int       `json:"id"`
+		LastUpdate int64     `json:"last_update"`
+	}{
+		g.board.GameHash(),
+		g.TurnCount,
+		log,
+		g.Players,
+		g.Id,
+		time.Now().Unix(),
+	})
+}
+
+func (g *Game) UnmarshalJSON(data []byte) (err error) {
+	dst := struct {
+		Board      string    `json:"board"`
+		TurnCount  int       `json:"turn_count"`
+		Log        string    `json:"log"`
+		Players    []*Player `json:"players"`
+		Id         int       `json:"id"`
+		LastUpdate int64     `json:"last_update"`
+	}{}
+	if err = json.Unmarshal(data, &dst); err != nil {
+		return err
+	}
+
+	g.board, err = NewBoardFromHash(dst.Board)
+	if err != nil {
+		return err
+	}
+	g.TurnCount = dst.TurnCount
+
+	// Init the players here
+	g.Players = dst.Players
+	for _, p := range g.Players {
+		p.init(g)
+	}
+
+	g.Id = dst.Id
+	// Get the logs in there
+	log := new(strings.Builder)
+	if len(dst.Log) > 0 {
+		log.WriteString(dst.Log)
+	}
+	g.log = log
+
+	if time.Now().Unix()-dst.LastUpdate > int64(ExpireTime) {
+		return fmt.Errorf("game has expired")
+	}
+	return nil
 }
