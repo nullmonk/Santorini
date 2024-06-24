@@ -10,6 +10,7 @@ var blue = new Color(50, 60, 160);
 var white = new Color(200, 200, 200);
 var colCap = new Color(163, 69, 64);
 
+var teamColors = [null, blue, red]
 var ColorBuildHighlight = new Color(122, 204, 147);
 var ColorBuilding = new Color(209, 207, 199);
 
@@ -17,7 +18,7 @@ var BS = 3; // size of the blocks
 var BH = .5; // base height and height of the floor
 var BlockHeight = .5 // height of each layer
 var Grid = 5;
-
+var Hash = "CAAAAAAAIAAAQAQAAAAIAAABAA";
 
 // Layers to draw on
 var drawLayers = Array.from(Array(Grid+Grid), () => new Array())
@@ -83,14 +84,22 @@ function drawtile(ox, oy, h, worker, highlight, ghostLayer) {
     }
 }
 
-function DrawBoard(data) {
-    drawLayers = Array.from(Array(Grid+Grid), () => new Array())
-    drawtile(4,4,4,red)
-    drawtile(3,3,4,red)
-    drawtile(3,2,2,null, ColorBuildHighlight)
-    drawtile(2,2,2,null, ColorBuildHighlight)
-    drawtile(2,1,4,red)
-    drawtile(0,0,3,blue)
+function DrawBoard(boardHash) {
+    if (boardHash !== null) {
+        boardWidth = boardHash.charCodeAt(0) - 65 + 3; // Min width is 0
+        boardHeight = (boardHash.length -1)/boardWidth;
+        drawLayers = Array.from(Array(boardWidth+boardHeight), () => new Array())
+        for (i = 0; i < boardWidth*boardHeight; i++) {
+            x = Math.floor(i/boardWidth);
+            y = i%boardWidth;
+
+            t = boardHash.charCodeAt(i+1) - 65;
+            team = t>>3;
+            height = t & 0x7;
+            console.log(`Tile at ${t} (${x}, ${y}) = team=${team}, height=${height} ${boardHash[i+1]}`)
+            drawtile(x, y, height, teamColors[team])
+        }
+    }
     Redraw()
 }
 
