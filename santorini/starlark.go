@@ -102,11 +102,7 @@ func (p *Player) init(g *Game) error {
 		fmt.Printf("%s: %+v\n", p.Name, p.globals)
 	}
 	p.gameOver = p.globals["game_over"] // TODO: Implement hooks for start and end
-	if p.Team != 0 {
-		p.logName = fmt.Sprintf("%s (%d)", p.Name, p.Team)
-	} else {
-		p.logName = p.Name
-	}
+	p.logName = p.Name
 	return nil
 }
 
@@ -152,7 +148,7 @@ func NewGame(id int, log io.Writer, players ...*Player) *Game {
 
 	fmt.Fprintf(g.log, "GAME: %d\n", id)
 	fmt.Fprintf(g.log, "BOARD: %s\n", b.GameHash())
-	fmt.Fprintf(g.log, "TEAMS: %s\n", strings.Join(playernames, " vs. "))
+	fmt.Fprintf(g.log, "TEAMS: %s\n", strings.Join(playernames, " "))
 	return g
 }
 
@@ -188,7 +184,7 @@ func (g *Game) NextTurn() (over bool, err error) {
 
 	g.TurnCount++
 	g.writeComments() // Write all the comment before the turn is dumped
-	fmt.Fprintf(g.log, "TURN: %s # %s\n", turn.String(), bot.logName)
+	fmt.Fprintf(g.log, "TURN: %s %s # %s\n", turn.String(), g.board.GameHash(), bot.logName)
 	if v {
 		// We won?
 		g.Victor = bot

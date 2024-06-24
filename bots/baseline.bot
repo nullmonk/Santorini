@@ -32,26 +32,13 @@ def rank(board, turn):
         if tile.height < turn.worker.height:
             rank += 1
     
-
-
-    for tile in board.get_surrounding_tiles(turn.build.x, turn.build.y):
-        # This move is a cap, if an enemy is near the cap, its good, if not, its bad
-        if turn.build.height == 3:
-            # Its an enemy worker, and the worker can jump up
-            if tile.team > 0 and tile.team != turn.worker.team and tile.height == 2:
-                rank += 10000000 # Blocking is good
-            else:
-                rank -= 100 # Randomly capping is bad
-        
-        # Build up next to existing tiles
-        if tile.height > turn.build.height:
-            rank += 5
-
     # check out where we are moving
     for tile in board.get_surrounding_tiles(turn.move.x, turn.move.y):
         # avoid moving next to ourselves
-        if tile.team > 0 and tile.team == turn.worker.team:
-            rank -= 50
+        if tile.team == turn.worker.team:
+            rank -= 100
+        if tile.team > 0 and tile.team != turn.worker.team:
+            rank += 1
     
     if turn.is_winning_move:
         rank += 100000000

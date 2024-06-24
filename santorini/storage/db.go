@@ -1,4 +1,4 @@
-package santorini
+package storage
 
 import (
 	"crypto/md5"
@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"santorini/santorini"
 	"time"
 
 	"github.com/google/uuid"
@@ -173,7 +174,7 @@ func (d *Database) SaveCache(script string, memory []byte) error {
 }
 
 // SaveGame saves a game as JSON to the DB. If no ID is specified, generate one. If Game is nil, it is deleted
-func (d *Database) SaveGame(id string, g *Game) (string, error) {
+func (d *Database) SaveGame(id string, g *santorini.Game) (string, error) {
 	if id == "" {
 		id = uuid.New().String()
 	}
@@ -203,8 +204,8 @@ func (d *Database) DeleteGame(id string) error {
 	})
 }
 
-func (d *Database) LoadGame(id string) (*Game, error) {
-	g := &Game{}
+func (d *Database) LoadGame(id string) (*santorini.Game, error) {
+	g := &santorini.Game{}
 	err := d.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte("games"))
 		if b == nil {

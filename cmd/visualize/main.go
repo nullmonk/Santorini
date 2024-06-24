@@ -43,6 +43,13 @@ func TileIcon(t santorini.Tile) string {
 	return fmt.Sprintf("%s%v%s", color, tileIcon, Reset)
 }
 
+func printlnwithcolorreplacement(color map[string]string, line string) {
+	for orig, repl := range color {
+		line = strings.ReplaceAll(line, orig, repl)
+	}
+	fmt.Println(line)
+}
+
 // Visualize a game log
 
 func main() {
@@ -50,6 +57,8 @@ func main() {
 		fmt.Println("USAGE: <game file> [pause]")
 		os.Exit(1)
 	}
+
+	var team_colors map[string]string
 
 	f, err := os.Open(os.Args[1])
 	if err != nil {
@@ -61,6 +70,15 @@ func main() {
 	var b *santorini.FastBoard
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(line, "TEAMS: ") {
+			tms := strings.Split(strings.TrimPrefix(line, "TEAMS: "), " ")
+			team_colors = make(map[string]string, len(tms))
+			// Replace "team" with "[COLOR]team[RESET]"
+			for i, tm := range tms {
+				color := []string{White, Blue, Red, Purple}[i+1]
+				team_colors[tm] = fmt.Sprintf("%s%v%s", color, tm, Reset)
+			}
+		}
 		if strings.HasPrefix(line, "BOARD: ") {
 			line = strings.TrimPrefix(line, "BOARD: ")
 			b, err = santorini.NewBoardFromHash(line)
@@ -78,11 +96,12 @@ func main() {
 			if _, err := b.PlayTurn(t); err != nil {
 				log.Fatal(fmt.Errorf("error playing turn %s: %s", turn, err))
 			}
-			fmt.Println("\n" + line)
+			fmt.Println()
+			printlnwithcolorreplacement(team_colors, line)
 			fmt.Println(DumpBoardMini(b))
 			continue
 		}
-		fmt.Println(scanner.Text())
+		printlnwithcolorreplacement(team_colors, scanner.Text())
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)

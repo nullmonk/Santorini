@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"santorini/santorini"
+	"santorini/santorini/storage"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,7 +12,7 @@ import (
 func main() {
 	r := gin.Default()
 	r.GET("/scripts", func(c *gin.Context) {
-		c.JSON(http.StatusOK, santorini.Storage.Scripts())
+		c.JSON(http.StatusOK, storage.Storage.Scripts())
 	})
 	r.POST("/script", func(c *gin.Context) {
 		// Parse JSON
@@ -25,7 +26,7 @@ func main() {
 			c.JSON(http.StatusBadRequest, gin.H{"status": err.Error()})
 			return
 		}
-		err = santorini.Storage.SaveScript(json.Password, &santorini.Script{
+		err = storage.Storage.SaveScript(json.Password, &storage.Script{
 			Name:     json.Name,
 			Contents: json.Contents,
 		})
@@ -49,7 +50,7 @@ func main() {
 
 		players := make([]*santorini.Player, 0, len(json.Players))
 		for _, p := range json.Players {
-			s, err := santorini.Storage.LoadScript(p)
+			s, err := storage.Storage.LoadScript(p)
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"status": fmt.Sprintf("error loading player '%s': %s", p, err)})
 				return
