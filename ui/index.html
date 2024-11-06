@@ -18,19 +18,26 @@
   <script src="js/draw.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      // Explicitly declare the width and height of the canvas
-      var container = document.getElementById("output");
-      var canvas = document.getElementById("canvas");
-      var width = container.offsetWidth;
-      var height = container.offsetHeight;
-      canvas.style.width = width + "px";
-      canvas.style.height = height + "px";
+    // Explicitly declare the width and height of the canvas
+    var container = document.getElementById("output");
+    var canvas = document.getElementById("canvas");
+    var width = container.offsetWidth;
+    var height = container.offsetHeight;
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
 
     // 2x for retina displays
     canvas.width = 2*width;
     canvas.height = 2*height;
-      DrawBoard("CAAAAAADSAAAABEAAAKELASBCA");
-      document.getElementById("rotate-btn").addEventListener("click", Rotate);
+    //DrawBoard();
+    function canvasToIsomer(x, y) {
+      return ;
+    }
+    //canvas.addEventListener('mousemove', SantoriniGame.onmouse);
+
+    document.getElementById("rotate-btn").addEventListener("click", SantoriniGame.rotate);
+
+    SantoriniGame.init("CAAAAAADSAAAABEAAAKELASBCA");
     });
   </script>
 </body>
